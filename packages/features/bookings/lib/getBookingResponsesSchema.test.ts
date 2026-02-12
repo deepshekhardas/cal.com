@@ -1200,12 +1200,180 @@ describe("getBookingResponsesSchema", () => {
     });
   });
 
-  test.todo("select");
-  test.todo("textarea");
-  test.todo("number");
-  test.todo("checkbox");
-  test.todo("radio");
-  test.todo("boolean");
+  describe("select field type", () => {
+    test("should successfully parse a select type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testSelect", type: "select", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testSelect: "option1",
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testSelect).toBe("option1");
+    });
+
+    test("should fail if required select is missing", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testSelect", type: "select", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+      });
+      expect(parsed.success).toBe(false);
+      expect(parsed.error?.issues[0].message).toContain(CUSTOM_REQUIRED_FIELD_ERROR_MSG);
+    });
+  });
+
+  describe("textarea field type", () => {
+    test("should successfully parse a textarea type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testTextarea", type: "textarea", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testTextarea: "some long text",
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testTextarea).toBe("some long text");
+    });
+  });
+
+  describe("number field type", () => {
+    test("should successfully parse a number type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testNumber", type: "number", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testNumber: "123",
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testNumber).toBe("123");
+    });
+  });
+
+  describe("checkbox field type", () => {
+    test("should successfully parse a checkbox type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testCheckbox", type: "checkbox", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testCheckbox: ["option1", "option2"],
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testCheckbox).toEqual(["option1", "option2"]);
+    });
+
+    test("should fail if required checkbox is empty", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testCheckbox", type: "checkbox", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testCheckbox: [],
+      });
+      expect(parsed.success).toBe(false);
+      expect(parsed.error?.issues[0].message).toContain(CUSTOM_REQUIRED_FIELD_ERROR_MSG);
+    });
+  });
+
+  describe("radio field type", () => {
+    test("should successfully parse a radio type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testRadio", type: "radio", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testRadio: "option1",
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testRadio).toBe("option1");
+    });
+  });
+
+  describe("boolean field type", () => {
+    test("should successfully parse a boolean type field", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testBoolean", type: "boolean", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testBoolean: true,
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testBoolean).toBe(true);
+    });
+
+    test("should parse 'true' string as boolean true due to preprocessing", async () => {
+      const schema = getBookingResponsesSchema({
+        bookingFields: [
+          { name: "name", type: "name", required: true },
+          { name: "email", type: "email", required: true },
+          { name: "testBoolean", type: "boolean", required: true },
+        ] as any,
+        view: "ALL_VIEWS",
+      });
+      const parsed = await schema.safeParseAsync({
+        name: "test",
+        email: "test@example.com",
+        testBoolean: "true",
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data?.testBoolean).toBe(true);
+    });
+  });
+
+
 });
 
 describe("validate radioInput type field", () => {
