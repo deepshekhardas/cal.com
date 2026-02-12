@@ -12,6 +12,7 @@ import type { Prisma, EventType } from "@calcom/prisma/client";
 import { SchedulingType } from "@calcom/prisma/enums";
 import classNames from "@calcom/ui/classNames";
 import { Badge } from "@calcom/ui/components/badge";
+import { Tooltip } from "@calcom/ui/components/tooltip";
 
 export type EventTypeDescriptionProps = {
   eventType: Pick<
@@ -114,14 +115,15 @@ export const EventTypeDescription = ({
           )}
           {eventType.requiresConfirmation && (
             <li className="hidden xl:block" data-testid="requires-confirmation-badge">
-              <Badge variant="gray" startIcon="clipboard">
-                {metadata?.requiresConfirmationThreshold
-                  ? t("may_require_confirmation")
-                  : t("requires_confirmation")}
-              </Badge>
+              <Tooltip content={t("requires_confirmation")}>
+                <Badge variant="gray" startIcon="clipboard">
+                  {metadata?.requiresConfirmationThreshold
+                    ? t("may_require_confirmation")
+                    : t("requires_confirmation")}
+                </Badge>
+              </Tooltip>
             </li>
           )}
-          {/* TODO: Maybe add a tool tip to this? */}
           {eventType.requiresConfirmation || (recurringEvent?.count && recurringEvent.count) ? (
             <li className="block xl:hidden">
               <Badge variant="gray" startIcon="plus">
