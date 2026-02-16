@@ -85,7 +85,7 @@ export enum EventDetailBlocks {
   PRICE,
 }
 
-export type { BookingCreateBody };
+export type { BookingCreateBody, RegularBookingCreateResult };
 
 export type RecurringBookingCreateBody = BookingCreateBody & {
   noEmail?: boolean;
@@ -96,7 +96,9 @@ export type RecurringBookingCreateBody = BookingCreateBody & {
   schedulingType?: SchedulingType;
 };
 
-// TODO: Instead of using the two different names, we want to use RegularBookingCreateResult name only but the name BookingResponse is used at ton of places and would be fixed in a separate followup PR.
+/**
+ * @deprecated Use RegularBookingCreateResult instead.
+ */
 export type BookingResponse = RegularBookingCreateResult;
 
 export type MarkNoShowResponse = Awaited<

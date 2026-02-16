@@ -131,7 +131,6 @@ function preprocess<T extends z.ZodType>({
           return;
         }
         const fieldTypeSchema = fieldTypesSchemaMap[field.type as keyof typeof fieldTypesSchemaMap];
-        // TODO: Move all the schemas along with their respective types to fieldTypeSchema, that would make schemas shared across Routing Forms builder and Booking Question Formm builder
         if (fieldTypeSchema) {
           newResponses[field.name] = fieldTypeSchema.preprocess({
             response: value,
@@ -139,14 +138,6 @@ function preprocess<T extends z.ZodType>({
             field,
           });
           return;
-        }
-        if (field.type === "boolean") {
-          // Turn a boolean in string to a real boolean
-          newResponses[field.name] = value === "true" || value === true;
-        }
-        // Make sure that the value is an array
-        else if (field.type === "multiemail" || field.type === "checkbox" || field.type === "multiselect") {
-          newResponses[field.name] = value instanceof Array ? value : [value];
         }
         // Parse JSON
         else if (field.type === "radioInput" && typeof value === "string") {
@@ -201,8 +192,8 @@ function preprocess<T extends z.ZodType>({
         const phoneSchema = isPartialSchema
           ? z.string()
           : z.string().refine(async (val) => {
-              return isValidPhoneNumber(val);
-            });
+            return isValidPhoneNumber(val);
+          });
         // Tag the message with the input name so that the message can be shown at appropriate place
         const m = (message: string, options?: Record<string, unknown>) => {
           const translatedMessage = translateFn ? translateFn(message, options) : message;

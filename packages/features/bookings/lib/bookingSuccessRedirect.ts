@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import dayjs from "@calcom/dayjs";
 import type { PaymentPageProps } from "@calcom/ee/payments/pages/payment";
 import { useIsEmbed } from "@calcom/embed-core/embed-iframe";
-import type { BookingResponse } from "@calcom/features/bookings/types";
+import type { RegularBookingCreateResult } from "@calcom/features/bookings/types";
 import { getSafe } from "@calcom/lib/getSafe";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { navigateInTopWindow } from "@calcom/lib/navigateInTopWindow";
@@ -57,7 +57,7 @@ export function getNewSearchParams(args: {
 }
 
 type SuccessRedirectBookingType = Pick<
-  BookingResponse | PaymentPageProps["booking"],
+  RegularBookingCreateResult | PaymentPageProps["booking"],
   "uid" | "title" | "description" | "startTime" | "endTime" | "location" | "attendees" | "user" | "responses"
 >;
 
@@ -248,8 +248,8 @@ export const useBookingSuccessRedirect = () => {
     // This is specially true after App Router it seems
     const headersRelatedSearchParams = searchParams
       ? {
-          "flag.coep": searchParams.get("flag.coep") ?? "false",
-        }
+        "flag.coep": searchParams.get("flag.coep") ?? "false",
+      }
       : undefined;
 
     // We don't want to forward all search params, as they could possibly break the booking page.

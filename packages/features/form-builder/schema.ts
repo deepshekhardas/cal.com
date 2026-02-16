@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fieldSchema, fieldTypeEnum, variantsConfigSchema, type FieldType } from "@calcom/prisma/zod-utils";
+import { fieldSchema, fieldTypeEnum, variantsConfigSchema, type FieldType, emailRegex } from "@calcom/prisma/zod-utils";
 
 import { fieldTypesConfigMap } from "./fieldTypes";
 import { preprocessNameFieldDataWithVariant } from "./utils";
@@ -186,6 +186,63 @@ export const fieldTypesSchemaMap: Partial<
           }
         }
       });
+    },
+  },
+  boolean: {
+    preprocess: ({ response }) => {
+      return response === "true" || response === true;
+    },
+    superRefine: ({ response, ctx, m }) => {
+      if (typeof response !== "boolean") {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid boolean") });
+      }
+    },
+  },
+  checkbox: {
+    preprocess: ({ response }) => {
+      return response instanceof Array ? response : [response];
+    },
+    superRefine: ({ response, ctx, m }) => {
+      if (!(response instanceof Array)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid checkbox value") });
+        return;
+      }
+      if (response.some((item) => typeof item !== "string")) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid array of strings") });
+      }
+    },
+  },
+  multiselect: {
+    preprocess: ({ response }) => {
+      return response instanceof Array ? response : [response];
+    },
+    superRefine: ({ response, ctx, m }) => {
+      if (!(response instanceof Array)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid multiselect value") });
+        return;
+      }
+      if (response.some((item) => typeof item !== "string")) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid array of strings") });
+      }
+    },
+  },
+  multiemail: {
+    preprocess: ({ response }) => {
+      return response instanceof Array ? response : [response];
+    },
+    superRefine: ({ response, ctx, m }) => {
+      if (!(response instanceof Array)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid multiemail value") });
+        return;
+      }
+      if (
+        response.some((item) => {
+          if (typeof item !== "string") return true;
+          return !item.match(emailRegex);
+        })
+      ) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: m("email_validation_error") });
+      }
     },
   },
   textarea: {

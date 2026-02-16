@@ -558,7 +558,7 @@ export default class EventManager {
       typeof credentialId === "number" && credentialId > 0
         ? await CredentialRepository.findCredentialForCalendarServiceById({ id: credentialId })
         : // Fallback for zero or nullish credentialId which could be the case of Global App e.g. dailyVideo
-          this.videoCredentials.find((cred) => cred.type === type) || null;
+        this.videoCredentials.find((cred) => cred.type === type) || null;
 
     if (!foundCredential) {
       log.error(
@@ -1038,7 +1038,6 @@ export default class EventManager {
       return undefined;
     }
 
-    /** @fixme potential bug since Google Meet are saved as `integrations:google:meet` and there are no `google:meet` type in our DB */
     const integrationName = event.location.replace("integrations:", "");
     let videoCredential;
     if (event.conferenceCredentialId) {
@@ -1046,9 +1045,12 @@ export default class EventManager {
         (credential) => credential.id === event.conferenceCredentialId
       );
     } else {
-      videoCredential = this.videoCredentials.find((credential: CredentialForCalendarService) =>
-        credential.type.includes(integrationName)
-      );
+      videoCredential = this.videoCredentials.find((credential: CredentialForCalendarService) => {
+        if (integrationName === "google:meet") {
+          return credential.type === "google_video";
+        }
+        return credential.type.includes(integrationName);
+      });
       log.warn(
         `Could not find conferenceCredentialId for event with location: ${event.location}, trying to use last added video credential`
       );
