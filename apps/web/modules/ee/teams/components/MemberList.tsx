@@ -91,17 +91,17 @@ export type State = {
 
 export type Action =
   | {
-      type:
-        | "SET_DELETE_ID"
-        | "SET_IMPERSONATE_ID"
-        | "EDIT_USER_SHEET"
-        | "TEAM_AVAILABILITY"
-        | "INVITE_MEMBER";
-      payload: Payload;
-    }
+    type:
+    | "SET_DELETE_ID"
+    | "SET_IMPERSONATE_ID"
+    | "EDIT_USER_SHEET"
+    | "TEAM_AVAILABILITY"
+    | "INVITE_MEMBER";
+    payload: Payload;
+  }
   | {
-      type: "CLOSE_MODAL";
-    };
+    type: "CLOSE_MODAL";
+  };
 
 const initialState: State = {
   deleteMember: {
@@ -757,7 +757,11 @@ function MemberListContent(props: Props) {
             )}
             <EventTypesList table={table} teamId={props.team.id} />
             <DeleteBulkTeamMembers
-              users={table.getSelectedRowModel().flatRows.map((row) => row.original)}
+              users={useMemo(
+                () => table.getSelectedRowModel().flatRows.map((row) => row.original),
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+                [rowSelection, table]
+              )}
               onRemove={() => table.toggleAllPageRowsSelected(false)}
               isOrg={checkIsOrg(props.team)}
               teamId={props.team.id}

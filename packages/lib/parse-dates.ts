@@ -102,11 +102,22 @@ export const parseRecurringDates = (
     dtstart: new Date(dayjs(startDate).valueOf()),
   });
 
-  const startUtcOffset = dayjs(startDate).utcOffset();
-  // UTC still need to have DST applied, rrule does not do this.
+  /*
+   * When using RRule, the "all()" method generates dates based on the UTC time of the "dtstart"
+   * and simply adds the interval (e.g. +24 hours). It does not account for DST shifts in a specific timezone.
+   * To preserve "Wall Clock Time" (e.g. always 10:00 AM locally), we must adjust the result
+   * by the difference in UTC offsets between the start date and the recurrent date in the target timezone.
+   */
+  const startInTimeZone = dayjs(startDate).tz(timeZone);
+  const startUtcOffset = startInTimeZone.utcOffset();
+
   const times = rule.all().map((t) => {
-    // applying the DST offset.
-    return dayjs.utc(t).add(startUtcOffset - dayjs(t).utcOffset(), "minute");
+    // Get the offset of the generated time 't' in the target timezone
+    // We use dayjs(t).tz(timeZone) to ensure we are looking at the offset in the desired location
+    const currentUtcOffset = dayjs(t).tz(timeZone).utcOffset();
+
+    // Adjust the time by the difference in offsets to maintain the same wall-clock time
+    return dayjs(t).add(startUtcOffset - currentUtcOffset, "minute");
   });
   const dateStrings = times.map((t) => {
     // finally; show in local timeZone again

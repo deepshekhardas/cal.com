@@ -1,6 +1,6 @@
 import type { Table } from "@tanstack/react-table";
 import type { Dispatch, SetStateAction } from "react";
-import { useState, Fragment } from "react";
+import { useState, Fragment, useMemo } from "react";
 
 import { DataTableSelectionBar } from "~/data-table/components";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -72,7 +72,13 @@ export function EventTypesList({ table, teamId }: Props) {
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [removeHostFromEvents, setRemoveHostFromEvents] = useState<Set<number>>(new Set());
   const eventTypeGroups = data?.eventTypeGroups;
-  const selectedUsers = table.getSelectedRowModel().flatRows.map((row) => row.original);
+  const rowSelection = table.getState().rowSelection;
+
+  // Memoize selectedUsers to prevent unnecessary re-calculations
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const selectedUsers = useMemo(() => {
+    return table.getSelectedRowModel().flatRows.map((row) => row.original);
+  }, [rowSelection, table]);
 
   // Add value array to the set
   const addValue = (set: Set<number>, setSet: Dispatch<SetStateAction<Set<number>>>, value: number[]) => {
@@ -112,9 +118,10 @@ export function EventTypesList({ table, teamId }: Props) {
                       <Fragment key={teamId}>
                         {events.map((event) => {
                           const hosts = event.hosts;
-                          const areAllUsersHostForEventType = selectedUsers.every((user) =>
-                            hosts.some((host) => host.userId === user.id)
-                          );
+                          // If there are more selected users than hosts, they can't all be hosts
+                          const areAllUsersHostForEventType =
+                            selectedUsers.length <= hosts.length &&
+                            selectedUsers.every((user) => hosts.some((host) => host.userId === user.id));
                           const isSelected =
                             (selectedEvents.has(event.id) || areAllUsersHostForEventType) &&
                             !removeHostFromEvents.has(event.id);

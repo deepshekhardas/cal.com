@@ -6,7 +6,7 @@ import type { Prisma, AttributeToUser, Membership, User, Profile } from "@calcom
 
 @Injectable()
 export class OrganizationsUsersRepository {
-  constructor(private readonly dbRead: PrismaReadService, private readonly dbWrite: PrismaWriteService) {}
+  constructor(private readonly dbRead: PrismaReadService, private readonly dbWrite: PrismaWriteService) { }
 
   private filterOnOrgMembership(orgId: number) {
     return {
@@ -30,6 +30,7 @@ export class OrganizationsUsersRepository {
     take?: number
   ) {
     const { teamIds, assignedOptionIds, attributeQueryOperator } = filters ?? {};
+    const limit = take && take > 100 ? 100 : take; // Safeguard for performance
     const attributeToUsersWithProfile = await this.dbRead.prisma.attributeToUser.findMany({
       include: {
         member: { include: { user: { include: { profiles: { where: { organizationId: orgId } } } } } },
@@ -59,7 +60,7 @@ export class OrganizationsUsersRepository {
         }),
       },
       skip,
-      take,
+      take: limit,
     });
     return attributeToUsersWithProfile.map(
       (
@@ -75,6 +76,7 @@ export class OrganizationsUsersRepository {
     skip?: number,
     take?: number
   ) {
+    const limit = take && take > 100 ? 100 : take; // Safeguard for performance
     return await this.dbRead.prisma.user.findMany({
       where: {
         ...this.filterOnOrgMembership(orgId),
@@ -89,7 +91,7 @@ export class OrganizationsUsersRepository {
         },
       },
       skip,
-      take,
+      take: limit,
     });
   }
 

@@ -6,13 +6,13 @@ import type { Prisma } from "@calcom/prisma/client";
 
 @Injectable()
 export class BookingReferencesRepository_2024_08_13 {
-  constructor(private readonly dbRead: PrismaReadService) {}
+  constructor(private readonly dbRead: PrismaReadService) { }
 
   async getBookingReferences(bookingId: number, filter?: BookingReferencesFilterInput_2024_08_13) {
     const whereClause: Prisma.BookingReferenceWhereInput = { bookingId, deleted: null };
 
     if (filter?.type) {
-      whereClause.type = filter.type;
+      whereClause.type = { in: filter.type };
     }
 
     return this.dbRead.prisma.bookingReference.findMany({

@@ -20,15 +20,17 @@ export class GetUsersInput {
   @IsOptional()
   skip?: number;
 
+  @ApiProperty({ required: false, description: "The email address or an array of email addresses to filter by", example: ["user1@example.com", "user2@example.com"] })
   @IsOptional()
   @Validate(IsEmailStringOrArray)
   @Transform(({ value }: { value: string | string[] }) => {
     return typeof value === "string" ? [value] : value;
   })
-  @ApiPropertyOptional({
-    type: [String],
-    description: "The email address or an array of email addresses to filter by",
-    example: ["user1@example.com", "user2@example.com"],
-  })
   emails?: string[];
+
+  @ApiProperty({ required: false, description: "Filter by organization ID", example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }: { value: string }) => value && parseInt(value))
+  organizationId?: number;
 }

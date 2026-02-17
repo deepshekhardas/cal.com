@@ -1,5 +1,6 @@
 import type { Table } from "@tanstack/react-table";
 import { useQueryState, parseAsBoolean } from "nuqs";
+import { useMemo } from "react";
 
 import { useCopy } from "@calcom/lib/hooks/useCopy";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -18,10 +19,14 @@ export function DynamicLink<T extends { username: string | null }>({
   const numberOfSelectedRows = table.getSelectedRowModel().rows.length;
   const isVisible = numberOfSelectedRows >= 2 && dynamicLinkVisible;
 
-  const users = table
-    .getSelectedRowModel()
-    .flatRows.map((row) => row.original.username)
-    .filter((u): u is string => u !== null);
+  const rowSelection = table.getState().rowSelection;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const users = useMemo(() => {
+    return table
+      .getSelectedRowModel()
+      .flatRows.map((row) => row.original.username)
+      .filter((u): u is string => u !== null);
+  }, [rowSelection, table]);
 
   const usersNameAsString = users.join("+");
 

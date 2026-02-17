@@ -36,6 +36,7 @@ import { fieldTypesConfigMap } from "@calcom/features/form-builder/fieldTypes";
 import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
 import type { fieldsSchema } from "@calcom/features/form-builder/schema";
 import { getFieldIdentifier } from "@calcom/features/form-builder/utils/getFieldIdentifier";
+import { getSafeHtmlLabelClient } from "@calcom/features/form-builder/utils/getSafeHtmlLabelClient";
 import { getConfig as getVariantsConfig } from "@calcom/features/form-builder/utils/variantsConfig";
 
 type RhfForm = {
@@ -235,8 +236,9 @@ export const FormBuilder = function FormBuilder({
               });
             }
 
-            if (fieldsThatSupportLabelAsSafeHtml.includes(field.type)) {
-              field = { ...field, labelAsSafeHtml: markdownToSafeHTMLClient(field.label ?? "") };
+            const safeHtmlLabel = getSafeHtmlLabelClient(field);
+            if (safeHtmlLabel) {
+              field = { ...field, ...safeHtmlLabel };
             }
             const numOptions = options?.length ?? 0;
             const firstOptionInput =

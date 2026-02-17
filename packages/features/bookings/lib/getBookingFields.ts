@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { Workflow } from "@calcom/features/ee/workflows/lib/types";
 import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
 import { getFieldIdentifier } from "@calcom/features/form-builder/utils/getFieldIdentifier";
+import { getSafeHtmlLabel } from "@calcom/features/form-builder/utils/getSafeHtmlLabel";
 import { SMS_REMINDER_NUMBER_FIELD, CAL_AI_AGENT_PHONE_NUMBER_FIELD } from "@calcom/lib/bookings/SystemField";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import slugify from "@calcom/lib/slugify";
@@ -365,12 +366,12 @@ export const ensureBookingInputsHaveSystemFields = ({
         required: input.required,
         options: input.options
           ? input.options.map((o) => {
-              return {
-                ...o,
-                // Send the label as the value without any trimming or lowercase as this is what customInput are doing. It maintains backward compatibility
-                value: o.label,
-              };
-            })
+            return {
+              ...o,
+              // Send the label as the value without any trimming or lowercase as this is what customInput are doing. It maintains backward compatibility
+              value: o.label,
+            };
+          })
           : [],
       });
     });
@@ -397,9 +398,7 @@ export const ensureBookingInputsHaveSystemFields = ({
     return {
       ...f,
       // TODO: This has to be a FormBuilder feature and not be specific to bookingFields. Either use zod transform in FormBuilder to add labelAsSafeHtml automatically or add a getter for fields that would do this.
-      ...(fieldsThatSupportLabelAsSafeHtml.includes(f.type)
-        ? { labelAsSafeHtml: markdownToSafeHTML(f.label || null) || "" }
-        : null),
+      ...getSafeHtmlLabel(f),
     };
   });
 
