@@ -99,6 +99,7 @@ const updateClientHandler = async ({ ctx, input }: UpdateClientOptions): Promise
     requestedStatus,
     triggersReapprovalForOwnerEdit: shouldTriggerReapprovalForOwnerEdit,
     currentStatus: clientWithUser.status,
+    isOwnerUpdatingFields: isUpdatingFields && isOwner && !isAdmin,
   });
 
   const updateData = buildUpdateClientUpdateData({
@@ -213,10 +214,12 @@ function computeNextStatus(params: {
   requestedStatus: OAuthClientStatus | undefined;
   triggersReapprovalForOwnerEdit: boolean;
   currentStatus: OAuthClientStatus;
+  isOwnerUpdatingFields: boolean;
 }): OAuthClientStatus {
-  const { requestedStatus, triggersReapprovalForOwnerEdit, currentStatus } = params;
+  const { requestedStatus, triggersReapprovalForOwnerEdit, currentStatus, isOwnerUpdatingFields } = params;
   if (requestedStatus !== undefined) return requestedStatus;
   if (triggersReapprovalForOwnerEdit) return "PENDING";
+  if (currentStatus === "REJECTED" && isOwnerUpdatingFields) return "PENDING";
   return currentStatus;
 }
 
