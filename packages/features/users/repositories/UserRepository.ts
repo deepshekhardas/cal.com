@@ -122,7 +122,7 @@ const userSelect = {
 } satisfies Prisma.UserSelect;
 
 export class UserRepository {
-  constructor(private prismaClient: PrismaClient) {}
+  constructor(private prismaClient: PrismaClient) { }
 
   async findTeamsByUserId({ userId }: { userId: UserType["id"] }) {
     const teamMemberships = await this.prismaClient.membership.findMany({
@@ -235,35 +235,35 @@ export class UserRepository {
     // Lookup in profiles because that's where the organization usernames exist
     const profiles = orgSlug
       ? (
-          await ProfileRepository.findManyByOrgSlugOrRequestedSlug({
-            orgSlug: orgSlug,
-            usernames: usernameList,
-          })
-        ).map((profile) => ({
-          ...profile,
-          organization: getParsedTeam(profile.organization),
-        }))
+        await ProfileRepository.findManyByOrgSlugOrRequestedSlug({
+          orgSlug: orgSlug,
+          usernames: usernameList,
+        })
+      ).map((profile) => ({
+        ...profile,
+        organization: getParsedTeam(profile.organization),
+      }))
       : null;
     const where =
       profiles && profiles.length > 0
         ? {
-            // Get UserIds from profiles
-            id: {
-              in: profiles.map((profile) => profile.user.id),
-            },
-          }
+          // Get UserIds from profiles
+          id: {
+            in: profiles.map((profile) => profile.user.id),
+          },
+        }
         : {
-            username: {
-              in: usernameList,
-            },
-            ...(orgSlug
-              ? {
-                  organization: whereClauseForOrgWithSlugOrRequestedSlug(orgSlug),
-                }
-              : {
-                  organization: null,
-                }),
-          };
+          username: {
+            in: usernameList,
+          },
+          ...(orgSlug
+            ? {
+              organization: whereClauseForOrgWithSlugOrRequestedSlug(orgSlug),
+            }
+            : {
+              organization: null,
+            }),
+        };
     return { where, profiles };
   }
 
@@ -752,27 +752,27 @@ export class UserRepository {
 
   async enrichEntityWithProfile<
     T extends
-      | {
-          profile: {
-            id: number;
-            username: string | null;
-            organizationId: number | null;
-            organization?: {
-              id: number;
-              name: string;
-              calVideoLogo?: string | null;
-              bannerUrl: string | null;
-              slug: string | null;
-              metadata: Prisma.JsonValue;
-            };
-          };
-        }
-      | {
-          user: {
-            username: string | null;
-            id: number;
-          };
-        },
+    | {
+      profile: {
+        id: number;
+        username: string | null;
+        organizationId: number | null;
+        organization?: {
+          id: number;
+          name: string;
+          calVideoLogo?: string | null;
+          bannerUrl: string | null;
+          slug: string | null;
+          metadata: Prisma.JsonValue;
+        };
+      };
+    }
+    | {
+      user: {
+        username: string | null;
+        id: number;
+      };
+    },
   >(entity: T) {
     if ("profile" in entity) {
       const { profile, ...entityWithoutProfile } = entity;
@@ -785,11 +785,11 @@ export class UserRepository {
           ...profileWithoutOrganization,
           ...(parsedOrg
             ? {
-                organization: parsedOrg,
-              }
+              organization: parsedOrg,
+            }
             : {
-                organization: null,
-              }),
+              organization: null,
+            }),
         },
       };
       return ret;
@@ -827,10 +827,10 @@ export class UserRepository {
       data: {
         movedToProfile: data.movedToProfileId
           ? {
-              connect: {
-                id: data.movedToProfileId,
-              },
-            }
+            connect: {
+              id: data.movedToProfileId,
+            },
+          }
           : undefined,
       },
     });
@@ -883,15 +883,15 @@ export class UserRepository {
         locked,
         ...(organizationIdValue
           ? {
-              organizationId: organizationIdValue,
-              profiles: {
-                create: {
-                  username,
-                  organizationId: organizationIdValue,
-                  uid: ProfileRepository.generateProfileUid(),
-                },
+            organizationId: organizationIdValue,
+            profiles: {
+              create: {
+                username,
+                organizationId: organizationIdValue,
+                uid: ProfileRepository.generateProfileUid(),
               },
-            }
+            },
+          }
           : {}),
         ...rest,
       },
@@ -1434,6 +1434,18 @@ export class UserRepository {
     await this.prismaClient.user.updateMany({
       where: { email },
       data: { locked: true },
+    });
+  }
+
+  async delete({ user }: { user: Pick<UserType, "id" | "email" | "metadata"> }) {
+    const { deleteStripeCustomer } = await import(
+      "@calcom/app-store/stripepayment/lib/customer"
+    );
+    await deleteStripeCustomer(user).catch(console.warn);
+    await this.prismaClient.user.delete({
+      where: {
+        id: user.id,
+      },
     });
   }
 

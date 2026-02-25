@@ -70,6 +70,7 @@ export const reserveSlotSchema = z
     // endTime ISOString
     slotUtcEndDate: z.string(),
     _isDryRun: z.boolean().optional(),
+    routedTeamMemberIds: z.array(z.number()).nullish(),
   })
   .refine(
     (data) => !!data.eventTypeId || !!data.slotUtcStartDate || !!data.slotUtcEndDate,

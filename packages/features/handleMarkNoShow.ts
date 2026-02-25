@@ -77,6 +77,7 @@ type HandleMarkHostNoShowArgs = {
   actionSource: ValidActionSource;
   locale?: string;
   platformClientParams?: PlatformClientParams;
+  attendeeEmail?: string;
 };
 
 type HandleMarkAttendeesAndHostNoShowArgs = {
@@ -354,10 +355,10 @@ const handleMarkNoShow = async ({
                 : [];
             const team = booking.eventType?.team
               ? {
-                  name: booking.eventType.team.name,
-                  id: booking.eventType.team.id,
-                  members: [],
-                }
+                name: booking.eventType.team.name,
+                id: booking.eventType.team.id,
+                members: [],
+              }
               : undefined;
 
             const calendarEvent: ExtendedCalendarEvent = {
@@ -515,13 +516,13 @@ export const handleMarkHostNoShow = async ({
   actionSource,
   locale,
   platformClientParams,
+  attendeeEmail,
 }: HandleMarkHostNoShowArgs): Promise<ResponsePayloadResult> => {
-  const actorEmail = buildActorEmail({
+  const actorEmail = attendeeEmail || buildActorEmail({
     identifier: getUniqueIdentifier({ prefix: "attendee" }),
     actorType: "guest",
   });
 
-  // TODO: Accept attendee email/name from the caller to track which attendee triggered this action
   const actor = makeGuestActor({ email: actorEmail, name: null });
 
   return handleMarkNoShow({

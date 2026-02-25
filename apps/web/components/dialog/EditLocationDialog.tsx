@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import type { EventLocationType, LocationObject } from "@calcom/app-store/locations";
 import {
-  getEventLocationType,
+  getLocationByType,
   getHumanReadableLocationValue,
   getMessageForOrganizer,
   isAttendeeInputRequired,
@@ -60,14 +60,14 @@ const LocationInput = (props: {
   const { control } = useFormContext() as typeof locationFormMethods;
   if (eventLocationType?.organizerInputType === "text") {
     return (
-      <Input {...locationFormMethods.register(eventLocationType.variable)} type="text" {...remainingProps} />
+      <Input {...locationFormMethods.register(eventLocationType.formFieldName)} type="text" {...remainingProps} />
     );
   } else if (eventLocationType?.organizerInputType === "phone") {
     const { defaultValue, ...rest } = remainingProps;
 
     return (
       <Controller
-        name={eventLocationType.variable}
+        name={eventLocationType.formFieldName}
         control={control}
         defaultValue={defaultValue}
         render={({ field: { onChange, value } }) => {
@@ -124,9 +124,8 @@ export const EditLocationDialog = (props: ISetLocationDialog) => {
             const sampleUrl = eventLocationType.organizerInputPlaceholder;
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Invalid URL for ${eventLocationType.label}. ${
-                sampleUrl ? `Sample URL: ${sampleUrl}` : ""
-              }`,
+              message: `Invalid URL for ${eventLocationType.label}. ${sampleUrl ? `Sample URL: ${sampleUrl}` : ""
+                }`,
             });
           }
           return;
@@ -168,7 +167,7 @@ export const EditLocationDialog = (props: ISetLocationDialog) => {
     name: "locationAddress",
   });
 
-  const eventLocationType = getEventLocationType(selectedLocation);
+  const eventLocationType = getLocationByType(selectedLocation);
 
   const defaultLocation = defaultValues?.find(
     (location: { type: EventLocationType["type"]; address?: string }) => {
@@ -185,8 +184,8 @@ export const EditLocationDialog = (props: ISetLocationDialog) => {
    */
   const SelectedLocationInput = (() => {
     if (eventLocationType && eventLocationType.organizerInputType && LocationInput) {
-      if (!eventLocationType.variable) {
-        console.error("eventLocationType.variable can't be undefined");
+      if (!eventLocationType.formFieldName) {
+        console.error("eventLocationType.formFieldName can't be undefined");
         return null;
       }
 
@@ -203,12 +202,12 @@ export const EditLocationDialog = (props: ISetLocationDialog) => {
               placeholder={t(eventLocationType.organizerInputPlaceholder || "")}
               required
               defaultValue={
-                defaultLocation ? defaultLocation[eventLocationType.defaultValueVariable] : undefined
+                defaultLocation ? defaultLocation[eventLocationType.addressFieldName] : undefined
               }
             />
             <ErrorMessage
               errors={locationFormMethods.formState.errors}
-              name={eventLocationType.variable}
+              name={eventLocationType.formFieldName}
               className="text-error mt-1 text-sm"
               as="p"
             />
@@ -230,7 +229,7 @@ export const EditLocationDialog = (props: ISetLocationDialog) => {
             let newLocation;
             // For the locations that require organizer to type-in some values, we need the value
             if (eventLocationType?.organizerInputType) {
-              newLocation = values[eventLocationType.variable];
+              newLocation = values[eventLocationType.formFieldName];
             } else {
               // locationType itself can be used here e.g. For zoom we use the type itself which is "integrations:zoom". For Organizer's Default Conferencing App, it is OrganizerDefaultConferencingAppType constant
               newLocation = newLocationType;

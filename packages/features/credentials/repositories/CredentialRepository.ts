@@ -1,4 +1,4 @@
-import { buildNonDelegationCredential } from "@calcom/lib/delegationCredential";
+import { buildNonDelegationCredential, buildNonDelegationCredentials } from "@calcom/lib/delegationCredential";
 import logger from "@calcom/lib/logger";
 import { prisma } from "@calcom/prisma";
 import type { Prisma, PrismaClient } from "@calcom/prisma/client";
@@ -26,7 +26,7 @@ type CredentialUpdateInput = {
 };
 
 export class CredentialRepository {
-  constructor(private prismaClient: PrismaClient) {}
+  constructor(private prismaClient: PrismaClient) { }
 
   async findByCredentialId(id: number) {
     return this.prismaClient.credential.findUnique({
@@ -105,6 +105,25 @@ export class CredentialRepository {
       where: { userId, type },
     });
     return buildNonDelegationCredential(credential);
+  }
+
+  static async findNonDelegationCredentialsForCalendarServiceByUserIdAndType({
+    userId,
+    type,
+  }: {
+    userId: number;
+    type: string;
+  }) {
+    const credentials = await prisma.credential.findMany({
+      where: {
+        userId,
+        type,
+        delegationCredentialId: null,
+      },
+      select: credentialForCalendarServiceSelect,
+    });
+
+    return buildNonDelegationCredentials(credentials);
   }
 
   static async deleteById({ id }: { id: number }) {

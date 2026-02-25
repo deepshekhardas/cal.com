@@ -21,53 +21,85 @@ export const MeetLocationType = importedMeetLocationType;
 export const MSTeamsLocationType = importedMSTeamsLocationType;
 export const DailyLocationType = importedDailyLocationType;
 
+export const EventLocationTypeSchema = z.object({
+  default: z.boolean(),
+  type: z.string(),
+  label: z.string(),
+  messageForOrganizer: z.string(),
+  category: z.enum(["in_person_category", "conferencing", "other", "phone"]),
+  linkType: z.enum(["static", "dynamic"]),
+  supportsCustomLabel: z.boolean().optional(),
+  iconUrl: z.string(),
+  urlRegExp: z.string().optional(),
+  /**
+   * formFieldName is used to map to the form field in the UI.
+   */
+  formFieldName: z.string(),
+  /**
+   * addressFieldName is used to pick the value from the LocationObject.
+   * i.e. location[addressFieldName]
+   */
+  addressFieldName: z.string(),
+  organizerInputType: z.enum(["phone", "text"]).nullable().optional(),
+  organizerInputPlaceholder: z.string().nullable().optional(),
+  organizerInputLabel: z.string().nullable().optional(),
+  attendeeInputType: z.enum(["phone", "attendeeAddress", "somewhereElse"]).nullable().optional(),
+  attendeeInputPlaceholder: z.string().optional(),
+});
+
 export type DefaultEventLocationType = {
   default: true;
   type: DefaultEventLocationTypeEnum;
   label: string;
   messageForOrganizer: string;
   category: "in_person_category" | "conferencing" | "other" | "phone";
-  linkType: "static";
+  linkType: "static" | "dynamic";
   supportsCustomLabel?: boolean;
 
   iconUrl: string;
   urlRegExp?: string;
-  // HACK: `variable` and `defaultValueVariable` are required due to legacy reason where different locations were stored in different places.
-  variable:
-    | "locationType"
-    | "locationAddress"
-    | "address"
-    | "locationLink"
-    | "locationPhoneNumber"
-    | "phone"
-    | "hostDefault";
-  defaultValueVariable:
-    | "address"
-    | "attendeeAddress"
-    | "link"
-    | "hostPhoneNumber"
-    | "hostDefault"
-    | "phone"
-    | "somewhereElse";
+  /**
+   * formFieldName is used to map to the form field in the UI.
+   */
+  formFieldName:
+  | "locationType"
+  | "locationAddress"
+  | "address"
+  | "locationLink"
+  | "locationPhoneNumber"
+  | "phone"
+  | "hostDefault";
+  /**
+   * addressFieldName is used to pick the value from the LocationObject.
+   * i.e. location[addressFieldName]
+   */
+  addressFieldName:
+  | "address"
+  | "attendeeAddress"
+  | "link"
+  | "hostPhoneNumber"
+  | "hostDefault"
+  | "phone"
+  | "somewhereElse";
 } & (
-  | {
+    | {
       organizerInputType: "phone" | "text" | null;
       organizerInputPlaceholder?: string | null;
       organizerInputLabel?: string | null;
       attendeeInputType?: null;
       attendeeInputPlaceholder?: null;
     }
-  | {
+    | {
       attendeeInputType: "phone" | "attendeeAddress" | "somewhereElse" | null;
       attendeeInputPlaceholder: string;
       organizerInputType?: null;
       organizerInputPlaceholder?: null;
     }
-);
+  );
 
 export type EventLocationTypeFromApp = Ensure<
   EventLocationTypeFromAppMeta,
-  "defaultValueVariable" | "variable"
+  "addressFieldName" | "formFieldName"
 > & { supportsCustomLabel?: boolean; organizerInputLabel?: string };
 
 export type EventLocationType = DefaultEventLocationType | EventLocationTypeFromApp;
@@ -107,12 +139,12 @@ export const defaultLocations: DefaultEventLocationType[] = [
     default: true,
     type: DefaultEventLocationTypeEnum.AttendeeInPerson,
     label: "in_person_attendee_address",
-    variable: "address",
+    formFieldName: "address",
     organizerInputType: null,
     messageForOrganizer: "Cal will ask your invitee to enter an address before scheduling.",
     attendeeInputType: "attendeeAddress",
     attendeeInputPlaceholder: "enter_address",
-    defaultValueVariable: "attendeeAddress",
+    addressFieldName: "attendeeAddress",
     iconUrl: "/map-pin-dark.svg",
     category: "in_person_category",
     linkType: "static",
@@ -122,12 +154,12 @@ export const defaultLocations: DefaultEventLocationType[] = [
     default: true,
     type: DefaultEventLocationTypeEnum.SomewhereElse,
     label: "custom_attendee_location",
-    variable: "address",
+    formFieldName: "address",
     organizerInputType: null,
     messageForOrganizer: "Cal will ask your invitee to enter any location before scheduling.",
     attendeeInputType: "somewhereElse",
     attendeeInputPlaceholder: "any_location",
-    defaultValueVariable: "somewhereElse",
+    addressFieldName: "somewhereElse",
     iconUrl: "/message-pin.svg",
     category: "other",
     linkType: "static",
@@ -139,9 +171,8 @@ export const defaultLocations: DefaultEventLocationType[] = [
     label: "in_person",
     organizerInputType: "text",
     messageForOrganizer: "Provide an Address or Place",
-    // HACK:
-    variable: "locationAddress",
-    defaultValueVariable: "address",
+    formFieldName: "locationAddress",
+    addressFieldName: "address",
     iconUrl: "/map-pin-dark.svg",
     category: "in_person_category",
     linkType: "static",
@@ -152,8 +183,8 @@ export const defaultLocations: DefaultEventLocationType[] = [
     iconUrl: "/link.svg",
     organizerInputType: null,
     label: "organizer_default_conferencing_app",
-    variable: "hostDefault",
-    defaultValueVariable: "hostDefault",
+    formFieldName: "hostDefault",
+    addressFieldName: "hostDefault",
     category: "conferencing",
     messageForOrganizer: "",
     linkType: "static",
@@ -165,9 +196,9 @@ export const defaultLocations: DefaultEventLocationType[] = [
     label: "link_meeting",
     organizerInputType: "text",
     organizerInputLabel: "meeting_link",
-    variable: "locationLink",
+    formFieldName: "locationLink",
     messageForOrganizer: "Provide a Meeting Link",
-    defaultValueVariable: "link",
+    addressFieldName: "link",
     iconUrl: "/link.svg",
     category: "other",
     linkType: "static",
@@ -177,11 +208,11 @@ export const defaultLocations: DefaultEventLocationType[] = [
     default: true,
     type: DefaultEventLocationTypeEnum.Phone,
     label: "attendee_phone_number",
-    variable: "phone",
+    formFieldName: "phone",
     organizerInputType: null,
     attendeeInputType: "phone",
     attendeeInputPlaceholder: `enter_phone_number`,
-    defaultValueVariable: "phone",
+    addressFieldName: "phone",
     messageForOrganizer: "Cal will ask your invitee to enter a phone number before scheduling.",
     // This isn't inputType phone because organizer doesn't need to provide it.
     // inputType: "phone"
@@ -196,8 +227,8 @@ export const defaultLocations: DefaultEventLocationType[] = [
     messageForOrganizer: "Provide your phone number",
     organizerInputType: "phone",
     organizerInputLabel: "phone_number",
-    variable: "locationPhoneNumber",
-    defaultValueVariable: "hostPhoneNumber",
+    formFieldName: "locationPhoneNumber",
+    addressFieldName: "hostPhoneNumber",
     iconUrl: "/phone.svg",
     category: "phone",
     linkType: "static",
@@ -252,17 +283,13 @@ for (const [appName, meta] of Object.entries(appStoreMetadata)) {
       iconUrl: meta.logo,
       // For All event location apps, locationLink is where we store the input
       // TODO: locationLink and link seems redundant. We can modify the code to keep just one of them.
-      variable: location.variable || "locationLink",
-      defaultValueVariable: location.defaultValueVariable || "link",
+      formFieldName: location.variable || "locationLink",
+      addressFieldName: location.defaultValueVariable || "link",
     };
 
     // Static links always require organizer to input
     if (newLocation.linkType === "static") {
       newLocation.organizerInputType = location.organizerInputType || "text";
-      if (newLocation.organizerInputPlaceholder?.match(/https?:\/\//)) {
-        // HACK: Translation ends up removing https? if it's in the beginning :(
-        newLocation.organizerInputPlaceholder = ` ${newLocation.organizerInputPlaceholder}`;
-      }
     } else {
       newLocation.organizerInputType = null;
     }
@@ -280,8 +307,7 @@ const locations = [...defaultLocations, ...locationsFromApps];
 export const getLocationFromApp = (locationType: string) =>
   locationsFromApps.find((l) => l.type === locationType);
 
-// TODO: Rename this to getLocationByType()
-export const getEventLocationType = (locationType: string | undefined | null) =>
+export const getLocationByType = (locationType: string | undefined | null) =>
   locations.find((l) => l.type === locationType);
 
 const getStaticLinkLocationByValue = (value: string | undefined | null) => {
@@ -297,7 +323,7 @@ const getStaticLinkLocationByValue = (value: string | undefined | null) => {
 };
 
 export const guessEventLocationType = (locationTypeOrValue: string | undefined | null) =>
-  getEventLocationType(locationTypeOrValue) || getStaticLinkLocationByValue(locationTypeOrValue);
+  getLocationByType(locationTypeOrValue) || getStaticLinkLocationByValue(locationTypeOrValue);
 
 export const LocationType = { ...DefaultEventLocationTypeEnum, ...AppStoreLocationType };
 
@@ -322,7 +348,7 @@ type PrivacyFilteredLocationObject = Optional<LocationObject, "address" | "link"
 
 export const privacyFilteredLocations = (locations: LocationObject[]): PrivacyFilteredLocationObject[] => {
   const locationsAfterPrivacyFilter = locations.map((location) => {
-    const eventLocationType = getEventLocationType(location.type);
+    const eventLocationType = getLocationByType(location.type);
     if (!eventLocationType) {
       logger.debug(`Couldn't find location type. App might be uninstalled: ${location.type} `);
     }
@@ -384,16 +410,16 @@ export const getHumanReadableLocationValue = (
 };
 
 export const locationKeyToString = (location: LocationObject) => {
-  const eventLocationType = getEventLocationType(location.type);
+  const eventLocationType = getLocationByType(location.type);
   if (!eventLocationType) {
     return null;
   }
-  const defaultValueVariable = eventLocationType.defaultValueVariable;
-  if (!defaultValueVariable) {
-    logger.error(`defaultValueVariable not set for ${location.type}`);
+  const addressFieldName = eventLocationType.addressFieldName;
+  if (!addressFieldName) {
+    logger.error(`addressFieldName not set for ${location.type}`);
     return "";
   }
-  return location[defaultValueVariable] || eventLocationType.label;
+  return location[addressFieldName] || eventLocationType.label;
 };
 
 export const getEventLocationWithType = (
@@ -418,7 +444,7 @@ export const getLocationValueForDB = (
 
   eventLocations.forEach((location) => {
     if (location.type === bookingLocationTypeOrValue) {
-      const eventLocationType = getEventLocationType(bookingLocationTypeOrValue);
+      const eventLocationType = getLocationByType(bookingLocationTypeOrValue);
       conferenceCredentialId = location.credentialId;
       if (!eventLocationType) {
         return;
@@ -429,7 +455,7 @@ export const getLocationValueForDB = (
         return;
       }
 
-      bookingLocation = location[eventLocationType.defaultValueVariable] || bookingLocation;
+      bookingLocation = location[eventLocationType.addressFieldName] || bookingLocation;
     }
   });
 
@@ -441,13 +467,13 @@ export const getLocationValueForDB = (
 };
 
 export const getEventLocationValue = (eventLocations: LocationObject[], bookingLocation: LocationObject) => {
-  const eventLocationType = getEventLocationType(bookingLocation?.type);
+  const eventLocationType = getLocationByType(bookingLocation?.type);
   if (!eventLocationType) {
     return "";
   }
-  const defaultValueVariable = eventLocationType.defaultValueVariable;
-  if (!defaultValueVariable) {
-    logger.error(`${defaultValueVariable} not set for ${bookingLocation.type}`);
+  const addressFieldName = eventLocationType.addressFieldName;
+  if (!addressFieldName) {
+    logger.error(`${addressFieldName} not set for ${bookingLocation.type}`);
     return "";
   }
   const eventLocation = getEventLocationWithType(eventLocations, bookingLocation?.type);
@@ -461,7 +487,7 @@ export const getEventLocationValue = (eventLocations: LocationObject[], bookingL
   // Backend checks for `integration` to generate link
   // TODO: use zodSchema to ensure the type of data is correct
   return (
-    bookingLocation[defaultValueVariable] || eventLocation[defaultValueVariable] || eventLocationType.type
+    bookingLocation[addressFieldName] || eventLocation[addressFieldName] || eventLocationType.type
   );
 };
 
@@ -470,7 +496,7 @@ export function getSuccessPageLocationMessage(
   t: TFunction,
   bookingStatus?: BookingStatus
 ) {
-  const eventLocationType = getEventLocationType(location);
+  const eventLocationType = getLocationByType(location);
   let locationToDisplay = location;
   if (eventLocationType && !eventLocationType.default && eventLocationType.linkType === "dynamic") {
     const isConfirmed = bookingStatus === BookingStatus.ACCEPTED;
@@ -490,7 +516,7 @@ export function getSuccessPageLocationMessage(
 
 export const getTranslatedLocation = (
   location: PrivacyFilteredLocationObject,
-  eventLocationType: ReturnType<typeof getEventLocationType>,
+  eventLocationType: ReturnType<typeof getLocationByType>,
   t: TFunction
 ) => {
   if (!eventLocationType) return null;
@@ -546,7 +572,7 @@ export const locationsResolver = (t: TFunction) => {
         .superRefine((val, ctx) => {
           if (val?.link) {
             const link = val.link;
-            const eventLocationType = getEventLocationType(val.type);
+            const eventLocationType = getLocationByType(val.type);
             if (
               eventLocationType &&
               !eventLocationType.default &&
@@ -559,7 +585,7 @@ export const locationsResolver = (t: TFunction) => {
                 const sampleUrl = eventLocationType.organizerInputPlaceholder;
                 ctx.addIssue({
                   code: z.ZodIssueCode.custom,
-                  path: [eventLocationType?.defaultValueVariable ?? "link"],
+                  path: [eventLocationType?.addressFieldName ?? "link"],
                   message: t("invalid_url_error_message", {
                     label: eventLocationType.label,
                     sampleUrl: sampleUrl ?? "https://cal.com",
@@ -574,7 +600,7 @@ export const locationsResolver = (t: TFunction) => {
             if (!valid) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: [eventLocationType?.defaultValueVariable ?? "link"],
+                path: [eventLocationType?.addressFieldName ?? "link"],
                 message: `Invalid URL`,
               });
             }

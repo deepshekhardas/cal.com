@@ -5,11 +5,11 @@ import { WorkflowMethods } from "@calcom/prisma/enums";
 
 type PartialWorkflowStep =
   | (Partial<WorkflowStep> & {
-      workflow: {
-        userId?: number;
-        teamId?: number;
-      };
-    })
+    workflow: {
+      userId?: number;
+      teamId?: number;
+    };
+  })
   | null;
 
 type Booking = Prisma.BookingGetPayload<{
@@ -20,30 +20,30 @@ type Booking = Prisma.BookingGetPayload<{
 
 type PartialBooking =
   | (Pick<
-      Booking,
-      | "startTime"
-      | "endTime"
-      | "location"
-      | "description"
-      | "metadata"
-      | "customInputs"
-      | "responses"
-      | "uid"
-      | "attendees"
-      | "userPrimaryEmail"
-      | "smsReminderNumber"
-      | "title"
-    > & {
-      eventType:
-        | (Partial<EventType> & {
-            slug: string;
-            team: { parentId?: number; hideBranding: boolean };
-            hosts: { user: { email: string; destinationCalendar?: { primaryEmail: string } } }[] | undefined;
-          })
-        | null;
-    } & {
-      user: Partial<User> | null;
+    Booking,
+    | "startTime"
+    | "endTime"
+    | "location"
+    | "description"
+    | "metadata"
+    | "customInputs"
+    | "responses"
+    | "uid"
+    | "attendees"
+    | "userPrimaryEmail"
+    | "smsReminderNumber"
+    | "title"
+  > & {
+    eventType:
+    | (Partial<EventType> & {
+      slug: string;
+      team: { parentId?: number; hideBranding: boolean };
+      hosts: { user: { email: string; destinationCalendar?: { primaryEmail: string } } }[] | undefined;
     })
+    | null;
+  } & {
+    user: Partial<User> | null;
+  })
   | null;
 
 export type PartialWorkflowReminder = Pick<
@@ -73,10 +73,7 @@ async function getWorkflowReminders<T extends Prisma.WorkflowReminderSelect>(
       break;
     }
 
-    filteredWorkflowReminders.push(
-      // FIXME: This is a workaround to avoid type errors
-      ...(newFilteredWorkflowReminders as unknown as Array<Prisma.WorkflowReminderGetPayload<{ select: T }>>)
-    );
+    filteredWorkflowReminders.push(...newFilteredWorkflowReminders);
     pageNumber++;
   }
 

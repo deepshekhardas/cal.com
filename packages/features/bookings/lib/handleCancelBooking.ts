@@ -12,6 +12,7 @@ import {
 } from "@calcom/features/booking-audit/lib/makeActor";
 import type { ValidActionSource } from "@calcom/features/booking-audit/lib/types/actionSource";
 import { BookingReferenceRepository } from "@calcom/features/bookingReference/repositories/BookingReferenceRepository";
+import { tasker } from "@calcom/features/tasker";
 import { getBookingEventHandlerService } from "@calcom/features/bookings/di/BookingEventHandlerService.container";
 import EventManager from "@calcom/features/bookings/lib/EventManager";
 import { getCalEventResponses } from "@calcom/features/bookings/lib/getCalEventResponses";
@@ -378,12 +379,12 @@ async function handler(input: CancelBookingInput, dependencies?: Dependencies) {
     cancellationReason: cancellationReason,
     ...(teamMembers &&
       teamId && {
-        team: {
-          name: bookingToDelete?.eventType?.team?.name || "Nameless",
-          members: teamMembers,
-          id: teamId,
-        },
-      }),
+      team: {
+        name: bookingToDelete?.eventType?.team?.name || "Nameless",
+        members: teamMembers,
+        id: teamId,
+      },
+    }),
     seatsPerTimeSlot: bookingToDelete.eventType?.seatsPerTimeSlot,
     seatsShowAttendees: bookingToDelete.eventType?.seatsShowAttendees,
     iCalUID: bookingToDelete.iCalUID,
@@ -679,15 +680,20 @@ async function handler(input: CancelBookingInput, dependencies?: Dependencies) {
   }
 
   try {
-    // TODO: if emails fail try to requeue them
-    if (!platformClientId || (platformClientId && arePlatformEmailsEnabled))
+    if (!platformClientId || (platformClientId && arePlatformEmailsEnabled)) {
       await sendCancelledEmailsAndSMS(
         evt,
         { eventName: bookingToDelete?.eventType?.eventName },
         bookingToDelete?.eventType?.metadata as EventTypeMetadata
       );
+    }
   } catch (error) {
-    log.error("Error deleting event", error);
+    log.error("Error sending cancellation emails, trying to requeue", error);
+    await tasker.create("sendCancelledEmails", {
+      evt,
+      eventNameObject: { eventName: bookingToDelete?.eventType?.eventName },
+      eventTypeMetadata: bookingToDelete?.eventType?.metadata as EventTypeMetadata,
+    });
   }
   return {
     success: true,
@@ -712,7 +718,7 @@ type BookingCancelServiceDependencies = {
  * Handles both individual booking cancellations and bulk cancellations for recurring events.
  */
 export class BookingCancelService implements IBookingCancelService {
-  constructor(private readonly deps: BookingCancelServiceDependencies) {}
+  constructor(private readonly deps: BookingCancelServiceDependencies) { }
 
   async cancelBooking(input: {
     bookingData: CancelRegularBookingData;

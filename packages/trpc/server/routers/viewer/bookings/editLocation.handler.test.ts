@@ -1,12 +1,30 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
-// TODO: Bring this test back with the correct setup (no illegal imports)
-// NOTE: All imports except vitest are deferred to inside the skipped describe blocks
-// to prevent module loading side effects during test collection (which can cause
-// "Closing rpc while fetch was pending" errors from watchlist module imports)
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-describe.skip("getLocationForOrganizerDefaultConferencingAppInEvtFormat", () => {
+import { BookingStatus } from "@calcom/prisma/enums";
+import { prisma } from "@calcom/prisma";
+import { UserError, SystemError } from "@calcom/lib/errors";
+import {
+  TestData,
+  getOrganizer,
+  createBookingScenario,
+  getScenarioData,
+} from "@calcom/testing/lib/bookingScenario/bookingScenario";
+import { expectSuccesfulLocationChangeEmails } from "@calcom/testing/lib/bookingScenario/expects";
+
+import {
+  getLocationForOrganizerDefaultConferencingAppInEvtFormat,
+  editLocationHandler,
+} from "./editLocation.handler";
+
+// Mock helper
+const getZoomAppCredential = () => ({
+  id: 1,
+  appId: "zoom",
+  type: "zoom_video",
+  key: {},
+});
+
+describe("getLocationForOrganizerDefaultConferencingAppInEvtFormat", () => {
   const mockTranslate = vi.fn((key: string) => key);
 
   beforeEach(() => {
@@ -126,7 +144,7 @@ describe.skip("getLocationForOrganizerDefaultConferencingAppInEvtFormat", () => 
   });
 });
 
-describe.skip("editLocation.handler", () => {
+describe("editLocation.handler", () => {
   describe("Changing organizer default conferencing app", () => {
     test("should update the booking location when organizer's default conferencing app changes", async ({
       emails,

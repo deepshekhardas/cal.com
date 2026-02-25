@@ -144,11 +144,11 @@ class BiginCrmService implements CRM {
 
     return response
       ? response.data.map((contact: any) => {
-          return {
-            id: contact.details.id,
-            email: contact.Email,
-          };
-        })
+        return {
+          id: contact.details.id,
+          email: contact.Email,
+        };
+      })
       : [];
   }
 
@@ -171,11 +171,11 @@ class BiginCrmService implements CRM {
 
     return response
       ? response.data.map((contact: BiginContact) => {
-          return {
-            id: contact.id,
-            email: contact.Email,
-          };
-        })
+        return {
+          id: contact.id,
+          email: contact.Email,
+        };
+      })
       : [];
   }
 
@@ -221,9 +221,7 @@ class BiginCrmService implements CRM {
       return Promise.resolve({
         uid: meetingEvent.data[0].details.id,
         id: meetingEvent.data[0].details.id,
-        //FIXME: `externalCalendarId` is required by the `updateAllCalendarEvents` method, but is not used by zoho-bigin App. Not setting this property actually skips calling updateEvent..
-        // Here the value doesn't matter. We just need to set it to something.
-        externalCalendarId: "NO_CALENDAR_ID_NEEDED",
+        externalCalendarId: meetingEvent.data[0].details.id, // Providing the actual external entity ID rather than a mocked string.
         type: this.integrationName,
         password: "",
         url: "",
@@ -321,7 +319,7 @@ export default function BuildCrmService(
   return new BiginCrmService(credential);
 }
 
-const toISO8601String= (date: Date) => {
+const toISO8601String = (date: Date) => {
   const tzo = -date.getTimezoneOffset(),
     dif = tzo >= 0 ? "+" : "-",
     pad = function (num: number) {

@@ -1,6 +1,6 @@
 import type { NextApiRequest } from "next";
 
-import { deleteUser } from "@calcom/features/users/lib/deleteUser";
+import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { HttpError } from "@calcom/lib/http-error";
 import { defaultResponder } from "@calcom/lib/server/defaultResponder";
 import prisma from "@calcom/prisma";
@@ -54,7 +54,7 @@ export async function deleteHandler(req: NextApiRequest) {
   });
   if (!user) throw new HttpError({ statusCode: 404, message: "User not found" });
 
-  await deleteUser(user);
+  await new UserRepository(prisma).delete({ user });
 
   return { message: `User with id: ${user.id} deleted successfully` };
 }

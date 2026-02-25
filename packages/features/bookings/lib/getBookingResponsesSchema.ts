@@ -17,13 +17,6 @@ export const bookingResponsesDbSchema = z.record(dbReadResponseSchema);
 
 const catchAllSchema = bookingResponsesDbSchema;
 
-const ensureValidPhoneNumber = (value: string) => {
-  if (!value) return "";
-  // + in URL could be replaced with space, so we need to replace it back
-  // Replace the space(s) in the beginning with + as it is supposed to be provided in the beginning only
-  return value.replace(/^ +/, "+");
-};
-
 /**
  * Processes a single field's response value based on its type.
  * Returns the processed value that should be stored in newResponses[field.name].
@@ -32,7 +25,6 @@ function preprocessField({
   field,
   value,
   isPartialSchema,
-  log,
 }: {
   field: NonNullable<BookingFields>[number];
   value: unknown;
@@ -40,44 +32,14 @@ function preprocessField({
   log: ReturnType<typeof logger.getSubLogger>;
 }): unknown {
   const fieldTypeSchema = fieldTypesSchemaMap[field.type as keyof typeof fieldTypesSchemaMap];
-  // TODO: Move all the schemas along with their respective types to fieldTypeSchema, that would make schemas shared across Routing Forms builder and Booking Question Formm builder
   if (fieldTypeSchema) {
     return fieldTypeSchema.preprocess({
       response: value,
       isPartialSchema,
-      field,
+      field: field as any,
     });
   }
-  if (field.type === "boolean") {
-    // Turn a boolean in string to a real boolean
-    return value === "true" || value === true;
-  }
-  // Make sure that the value is an array
-  else if (field.type === "multiemail" || field.type === "checkbox" || field.type === "multiselect") {
-    return value instanceof Array ? value : [value];
-  }
-  // Parse JSON
-  else if (field.type === "radioInput" && typeof value === "string") {
-    let parsedValue = {
-      optionValue: "",
-      value: "",
-    };
-    try {
-      parsedValue = JSON.parse(value);
-    } catch (e) {
-      log.error(`Failed to parse JSON for field ${field.name}`, e);
-    }
-    const optionsInputs = field.optionsInputs;
-    const optionInputField = optionsInputs?.[parsedValue.value];
-    if (optionInputField && optionInputField.type === "phone") {
-      parsedValue.optionValue = ensureValidPhoneNumber(parsedValue.optionValue);
-    }
-    return parsedValue;
-  } else if (field.type === "phone") {
-    return ensureValidPhoneNumber(typeof value === "string" ? value : String(value));
-  } else {
-    return value;
-  }
+  return value;
 }
 
 /**
@@ -90,10 +52,8 @@ async function superRefineField({
   value,
   isPartialSchema,
   isRequired,
-  checkOptional,
   zodCtx,
   translateFn,
-  responses,
 }: {
   field: NonNullable<BookingFields>[number];
   value: unknown;
@@ -104,13 +64,6 @@ async function superRefineField({
   translateFn?: TranslationFunction;
   responses: Record<string, unknown>;
 }): Promise<void> {
-  const stringSchema = z.string();
-  const emailSchema = isPartialSchema ? z.string() : z.string().refine(emailSchemaRefinement);
-  const phoneSchema = isPartialSchema
-    ? z.string()
-    : z.string().refine(async (val) => {
-        return isValidPhoneNumber(val);
-      });
   // Tag the message with the input name so that the message can be shown at appropriate place
   const m = (message: string, options?: Record<string, unknown>) => {
     const translatedMessage = translateFn ? translateFn(message, options) : message;
@@ -119,46 +72,6 @@ async function superRefineField({
 
   if (isRequired && !isPartialSchema && !value) {
     zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m(`error_required_field`) });
-    return;
-  }
-
-  if (field.type === "email") {
-    if (!field.hidden && (isRequired || (value && String(value).trim() !== ""))) {
-      // Email RegExp to validate if the input is a valid email
-      if (!emailSchema.safeParse(value).success) {
-        zodCtx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: m("email_validation_error"),
-        });
-      }
-
-      if (value) {
-        const bookerEmail = String(value);
-        const excludedEmails = field.excludeEmails?.split(",").map((domain) => domain.trim()) || [];
-
-        const match = excludedEmails.find((excludedEntry) => doesEmailMatchEntry(bookerEmail, excludedEntry));
-        if (match) {
-          zodCtx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: m("exclude_emails_match_found_error_message"),
-          });
-        }
-        const requiredEmails =
-          field.requireEmails
-            ?.split(",")
-            .map((domain) => domain.trim())
-            .filter(Boolean) || [];
-        const requiredEmailsMatch = requiredEmails.find((requiredEntry) =>
-          doesEmailMatchEntry(bookerEmail, requiredEntry)
-        );
-        if (requiredEmails.length > 0 && !requiredEmailsMatch) {
-          zodCtx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: m("require_emails_no_match_found_error_message"),
-          });
-        }
-      }
-    }
     return;
   }
 
@@ -171,116 +84,9 @@ async function superRefineField({
       response: value as unknown as any,
       ctx: zodCtx,
       m,
-      field,
+      field: field as any,
       isPartialSchema,
     });
-    return;
-  }
-
-  if (field.type === "multiemail") {
-    const emailsParsed = emailSchema.array().safeParse(value);
-
-    if (isRequired && (!value || (value as unknown[]).length === 0)) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m(`error_required_field`) });
-      return;
-    }
-
-    if (!emailsParsed.success) {
-      // If additional guests are shown but all inputs are empty then don't show any errors
-      if (field.name === "guests" && (value as string[]).every((email: string) => email === "")) {
-        // reset guests to empty array, otherwise it adds "" for every input
-        responses[field.name] = [];
-        return;
-      }
-      zodCtx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: m("email_validation_error"),
-      });
-      return;
-    }
-
-    const emails = emailsParsed.data;
-    emails.sort().some((item, i) => {
-      if (item === emails[i + 1]) {
-        zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("duplicate_email") });
-        return true;
-      }
-    });
-    return;
-  }
-
-  if (field.type === "multiselect") {
-    if (isRequired && (!value || (value as unknown[]).length === 0)) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m(`error_required_field`) });
-      return;
-    }
-    if (!stringSchema.array().safeParse(value).success) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid array of strings") });
-    }
-    return;
-  }
-
-  if (field.type === "checkbox") {
-    if (!stringSchema.array().safeParse(value).success) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid array of strings") });
-    }
-    return;
-  }
-
-  if (field.type === "phone") {
-    // Determine if the phone field needs validation
-    const needsValidation = isRequired || (value && (value as string).trim() !== "");
-
-    // Validate phone number if the field is not hidden and requires validation
-    if (!field.hidden && needsValidation) {
-      if (!(await phoneSchema.safeParseAsync(value)).success) {
-        zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("invalid_number") });
-      }
-    }
-    return;
-  }
-
-  if (field.type === "boolean") {
-    const schema = z.boolean();
-    if (!schema.safeParse(value).success) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid Boolean") });
-    }
-    return;
-  }
-
-  if (field.type === "radioInput") {
-    if (field.optionsInputs) {
-      const typedValue = value as { optionValue?: string; value?: string } | undefined;
-      const optionValue = typedValue?.optionValue;
-      const optionField = field.optionsInputs[typedValue?.value ?? ""];
-      const typeOfOptionInput = optionField?.type;
-      if (
-        // Either the field is required or there is a radio selected, we need to check if the optionInput is required or not.
-        (isRequired || typedValue?.value) && checkOptional ? true : optionField?.required && !optionValue
-      ) {
-        zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("error_required_field") });
-        return;
-      }
-
-      if (optionValue) {
-        // `typeOfOptionInput` can be any of the main types. So, the same validations should run for `optionValue`
-        if (typeOfOptionInput === "phone") {
-          if (!(await phoneSchema.safeParseAsync(optionValue)).success) {
-            zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("invalid_number") });
-          }
-        }
-      }
-    }
-    return;
-  }
-
-  // Use fieldTypeConfig.propsType to validate for propsType=="text" or propsType=="select" as in those cases, the response would be a string.
-  // If say we want to do special validation for 'address' that can be added to `fieldTypesSchemaMap`
-  if (["address", "text", "select", "number", "radio", "textarea"].includes(field.type)) {
-    const schema = stringSchema;
-    if (!schema.safeParse(value).success) {
-      zodCtx.addIssue({ code: z.ZodIssueCode.custom, message: m("Invalid string") });
-    }
     return;
   }
 
@@ -374,7 +180,7 @@ const buildFieldZodCtx = ({
   };
 };
 
-// TODO: Move preprocess of `booking.responses` to FormBuilder schema as that is going to parse the fields supported by FormBuilder
+// It allows anyone using FormBuilder to get the same preprocessing automatically
 // It allows anyone using FormBuilder to get the same preprocessing automatically
 function preprocess<T extends z.ZodType>({
   schema,

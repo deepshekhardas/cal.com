@@ -303,11 +303,9 @@ class SalesforceCRMService implements CRM {
   };
 
   private getSalesforceEventBody = (event: CalendarEvent): string => {
-    return `${event.organizer.language.translate("invitee_timezone")}: ${
-      event.attendees[0].timeZone
-    } \r\n\r\n ${event.organizer.language.translate("share_additional_notes")}\r\n${
-      event.additionalNotes || "-"
-    }`;
+    return `${event.organizer.language.translate("invitee_timezone")}: ${event.attendees[0].timeZone
+      } \r\n\r\n ${event.organizer.language.translate("share_additional_notes")}\r\n${event.additionalNotes || "-"
+      }`;
   };
 
   private salesforceCreateEventApiCall = async (
@@ -710,7 +708,7 @@ class SalesforceCRMService implements CRM {
         // Handle if Account is nested
         const ownerEmail =
           recordToSearch === SalesforceRecordEnum.ACCOUNT &&
-          record?.attributes?.type !== SalesforceRecordEnum.ACCOUNT
+            record?.attributes?.type !== SalesforceRecordEnum.ACCOUNT
             ? record?.Account?.Owner?.Email
             : record?.Owner?.Email;
 
@@ -742,7 +740,7 @@ class SalesforceCRMService implements CRM {
         }
 
         return {
-          id: includeAccountRecordType ? record?.AccountId || "" : record?.Id || "",
+          id: includeAccountRecordType ? record?.AccountId || record?.Id || "" : record?.Id || "",
           email: record?.Email || "",
           recordType: includeAccountRecordType ? SalesforceRecordEnum.ACCOUNT : record?.attributes?.type,
           ...(includeOwnerData && {
@@ -1475,8 +1473,7 @@ class SalesforceCRMService implements CRM {
       // Skip if field should only be written when empty and already has a value
       if (fieldConfig.whenToWrite === WhenToWriteToRecord.FIELD_EMPTY && personRecord[field.name]) {
         log.info(
-          `Field ${field.name} on contactId ${personRecord?.Id} already exists with value ${
-            personRecord[field.name]
+          `Field ${field.name} on contactId ${personRecord?.Id} already exists with value ${personRecord[field.name]
           }`
         );
         continue;
@@ -1558,8 +1555,7 @@ class SalesforceCRMService implements CRM {
         log.error(`Salesforce field type ${field.type} not handled for fieldConfig ${fieldConfig}`);
       }
       log.error(
-        `No value found for field ${field.name} with value ${
-          personRecord[field.name]
+        `No value found for field ${field.name} with value ${personRecord[field.name]
         }, field config ${JSON.stringify(fieldConfig)} and Salesforce config ${JSON.stringify(field)}`
       );
     }
@@ -2005,9 +2001,8 @@ class SalesforceCRMService implements CRM {
       .catch((e) => {
         const contactId = personRecord?.Id || "unknown";
         // catch the error and throw a new one with a more descriptive message
-        const errorMessage = `Error updating person record for contactId '${contactId}': ${
-          e instanceof Error ? e.message : String(e)
-        }`;
+        const errorMessage = `Error updating person record for contactId '${contactId}': ${e instanceof Error ? e.message : String(e)
+          }`;
         throw new Error(errorMessage);
       });
   }

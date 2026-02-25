@@ -1,6 +1,6 @@
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
 import { verifyPassword } from "@calcom/features/auth/lib/verifyPassword";
-import { deleteUser } from "@calcom/features/users/lib/deleteUser";
+import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { symmetricDecrypt } from "@calcom/lib/crypto";
 import { HttpError } from "@calcom/lib/http-error";
 import { totpAuthenticatorCheck } from "@calcom/lib/totp";
@@ -82,6 +82,6 @@ export const deleteMeHandler = async ({ ctx, input }: DeleteMeOptions) => {
     }
   }
 
-  await deleteUser(user);
+  await new UserRepository(prisma).delete({ user });
   return;
 };

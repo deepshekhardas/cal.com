@@ -54,6 +54,12 @@ type TaskPayloads = {
   webhookDelivery: z.infer<
     typeof import("@calcom/features/webhooks/lib/types/webhookTask").webhookTaskPayloadSchema
   >;
+  sendCancelledEmails: z.infer<
+    typeof import("./tasks/sendCancelledEmails").sendCancelledEmailsPayloadSchema
+  >;
+  toggleAppSideEffects: z.infer<
+    typeof import("./tasks/toggleAppSideEffects").toggleAppSideEffectsPayloadSchema
+  >;
 };
 export type TaskTypes = keyof TaskPayloads;
 export type TaskHandler = (payload: string, taskId?: string) => Promise<void>;

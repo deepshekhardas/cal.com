@@ -6,7 +6,7 @@ import { useFieldArray } from "react-hook-form";
 import type { UseFormGetValues, UseFormSetValue, Control, FormState } from "react-hook-form";
 
 import type { EventLocationType } from "@calcom/app-store/locations";
-import { getEventLocationType, MeetLocationType } from "@calcom/app-store/locations";
+import { getLocationByType, MeetLocationType } from "@calcom/app-store/locations";
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import type { LocationCustomClassNames } from "@calcom/features/eventtypes/components/locations/types";
 import type { LocationFormValues, EventTypeSetupProps } from "@calcom/features/eventtypes/lib/types";
@@ -70,15 +70,15 @@ const getLocationInfo = ({
   const locationDetails = eventType.locations &&
     eventType.locations.length > 0 &&
     !locationAvailable && {
-      slug: eventType.locations[0].type.replace("integrations:", "").replace(":", "-").replace("_video", ""),
-      name: eventType.locations[0].type
-        .replace("integrations:", "")
-        .replace(":", " ")
-        .replace("_video", "")
-        .split(" ")
-        .map((word) => word[0].toUpperCase() + word.slice(1))
-        .join(" "),
-    };
+    slug: eventType.locations[0].type.replace("integrations:", "").replace(":", "-").replace("_video", ""),
+    name: eventType.locations[0].type
+      .replace("integrations:", "")
+      .replace(":", " ")
+      .replace("_video", "")
+      .split(" ")
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(" "),
+  };
   return { locationAvailable, locationDetails };
 };
 
@@ -124,7 +124,7 @@ const Locations: React.FC<LocationsProps> = ({
 
   const validLocations =
     getValues("locations")?.filter((location) => {
-      const eventLocation = getEventLocationType(location.type);
+      const eventLocation = getLocationByType(location.type);
       if (!eventLocation) {
         // It's possible that the location app in use got uninstalled.
         return false;
@@ -169,7 +169,7 @@ const Locations: React.FC<LocationsProps> = ({
     <div className={classNames("w-full", customClassNames?.container)}>
       <ul ref={animationRef} className={classNames("stack-y-2")}>
         {locationFields.map((field, index) => {
-          const eventLocationType = getEventLocationType(field.type);
+          const eventLocationType = getLocationByType(field.type);
           const defaultLocation = field;
 
           const isCalVideo = field.type === "integrations:daily";
@@ -195,7 +195,7 @@ const Locations: React.FC<LocationsProps> = ({
                     setShowEmptyLocationSelect(false);
                     if (e?.value) {
                       const newLocationType = e.value;
-                      const eventLocationType = getEventLocationType(newLocationType);
+                      const eventLocationType = getLocationByType(newLocationType);
                       if (!eventLocationType) {
                         return;
                       }
@@ -205,7 +205,7 @@ const Locations: React.FC<LocationsProps> = ({
 
                       const shouldUpdateLink =
                         eventLocationType?.organizerInputType === "text" &&
-                        eventLocationType.defaultValueVariable === "link";
+                        eventLocationType.addressFieldName === "link";
 
                       if (canAddLocation) {
                         updateLocationField(index, {
@@ -273,7 +273,7 @@ const Locations: React.FC<LocationsProps> = ({
                         data-testid={`${eventLocationType.type}-location-input`}
                         defaultValue={
                           defaultLocation
-                            ? defaultLocation[eventLocationType.defaultValueVariable]
+                            ? defaultLocation[eventLocationType.addressFieldName]
                             : undefined
                         }
                         eventLocationType={eventLocationType}
@@ -284,7 +284,7 @@ const Locations: React.FC<LocationsProps> = ({
                     </div>
                     <ErrorMessage
                       errors={formState.errors?.locations?.[index]}
-                      name={eventLocationType.defaultValueVariable}
+                      name={eventLocationType.addressFieldName}
                       className={classNames(
                         "text-error my-1 ml-6 text-sm",
                         customClassNames?.organizerContactInput?.errorMessage
@@ -340,7 +340,7 @@ const Locations: React.FC<LocationsProps> = ({
                 setShowEmptyLocationSelect(false);
                 if (e?.value) {
                   const newLocationType = e.value;
-                  const eventLocationType = getEventLocationType(newLocationType);
+                  const eventLocationType = getLocationByType(newLocationType);
                   if (!eventLocationType) {
                     return;
                   }
@@ -371,26 +371,26 @@ const Locations: React.FC<LocationsProps> = ({
           (location) =>
             location.type === MeetLocationType && props.destinationCalendar?.integration !== "google_calendar"
         ) && (
-          <div className="text-default flex items-center text-sm">
-            <div className="mr-1.5 h-3 w-3">
-              <CheckIcon className="h-3 w-3" />
+            <div className="text-default flex items-center text-sm">
+              <div className="mr-1.5 h-3 w-3">
+                <CheckIcon className="h-3 w-3" />
+              </div>
+              <p className="text-default text-sm">
+                <ServerTrans
+                  t={t}
+                  i18nKey="event_type_requires_google_calendar"
+                  components={[
+                    <Link
+                      key="event_type_requires_google_calendar"
+                      className="cursor-pointer text-blue-500 underline"
+                      href="/apps/google-calendar">
+                      here
+                    </Link>,
+                  ]}
+                />
+              </p>
             </div>
-            <p className="text-default text-sm">
-              <ServerTrans
-                t={t}
-                i18nKey="event_type_requires_google_calendar"
-                components={[
-                  <Link
-                    key="event_type_requires_google_calendar"
-                    className="cursor-pointer text-blue-500 underline"
-                    href="/apps/google-calendar">
-                    here
-                  </Link>,
-                ]}
-              />
-            </p>
-          </div>
-        )}
+          )}
         {isChildrenManagedEventType && !locationAvailable && locationDetails && (
           <p className="pl-1 text-sm leading-none text-red-600">
             {t("app_not_connected", { appName: locationDetails.name })}{" "}

@@ -40,6 +40,10 @@ const tasks: Record<TaskTypes, () => Promise<TaskHandler>> = {
     import("./cancelProrationReminder").then((module) => module.cancelProrationReminder),
   bookingAudit: () => import("./bookingAudit").then((module) => module.bookingAudit),
   webhookDelivery: () => import("./webhookDelivery").then((module) => module.webhookDelivery),
+  sendCancelledEmails: () =>
+    import("./sendCancelledEmails").then((module) => module.sendCancelledEmails),
+  toggleAppSideEffects: () =>
+    import("./toggleAppSideEffects").then((module) => module.toggleAppSideEffects),
 };
 
 export const tasksConfig = {

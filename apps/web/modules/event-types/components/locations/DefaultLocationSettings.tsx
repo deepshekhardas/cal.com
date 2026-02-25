@@ -1,7 +1,7 @@
 import { ErrorMessage } from "@hookform/error-message";
 import { useFieldArray, useFormContext } from "react-hook-form";
 
-import { getEventLocationType } from "@calcom/app-store/locations";
+import { getLocationByType } from "@calcom/app-store/locations";
 import type { LocationCustomClassNames } from "@calcom/features/eventtypes/components/locations/types";
 import type { LocationFormValues, FormValues } from "@calcom/features/eventtypes/lib/types";
 import CheckboxField from "@calcom/features/form/components/CheckboxField";
@@ -30,7 +30,7 @@ const DefaultLocationSettings = ({
     name: "locations",
   });
   const defaultLocation = field;
-  const eventLocationType = getEventLocationType(field.type);
+  const eventLocationType = getLocationByType(field.type);
 
   if (!eventLocationType) return null;
 
@@ -39,7 +39,7 @@ const DefaultLocationSettings = ({
       <LocationInput
         label={"organizerInputLabel" in eventLocationType ? eventLocationType?.organizerInputLabel : null}
         data-testid={`${eventLocationType.type}-location-input`}
-        defaultValue={defaultLocation ? defaultLocation[eventLocationType.defaultValueVariable] : undefined}
+        defaultValue={defaultLocation ? defaultLocation[eventLocationType.addressFieldName] : undefined}
         eventLocationType={eventLocationType}
         index={index}
         customClassNames={customClassNames?.organizerContactInput?.locationInput}
@@ -47,7 +47,7 @@ const DefaultLocationSettings = ({
       />
       <ErrorMessage
         errors={formState.errors?.locations?.[index]}
-        name={eventLocationType.defaultValueVariable}
+        name={eventLocationType.addressFieldName}
         className={classNames(
           "text-error my-1 ml-6 text-sm",
           customClassNames?.organizerContactInput?.errorMessage

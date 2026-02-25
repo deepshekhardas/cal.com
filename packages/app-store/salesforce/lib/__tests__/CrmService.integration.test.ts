@@ -39,7 +39,7 @@ vi.mock("@calcom/lib/constants", () => {
 vi.mock("@jsforce/jsforce-node", () => {
   return {
     default: {
-      Connection: vi.fn().mockImplementation(function() { return {}; }),
+      Connection: vi.fn().mockImplementation(function () { return {}; }),
     },
   };
 });
@@ -130,7 +130,7 @@ describe("SalesforceCRMService", () => {
     // Override jsforce mock with our custom mock
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - Not full implementation of jsforce.Connection
-    vi.mocked(jsforce.Connection).mockImplementation(function() {
+    vi.mocked(jsforce.Connection).mockImplementation(function () {
       return {
         ...salesforceMock.mockConnection,
         version: "1.0",
@@ -180,8 +180,7 @@ describe("SalesforceCRMService", () => {
         // Account doesn't have email
         expect(contacts[0].email).toBe("");
         expect(contacts[0].recordType).toBe(SalesforceRecordEnum.ACCOUNT);
-        // FIXME: Seems like a bug as this should have been accountId but it is undefined
-        // expect(contacts[0].id).toBe(account.Id);
+        expect(contacts[0].id).toBe("accountId");
       });
 
       it("(Lookup-3) should fallback to account having most number of contacts matched by emailDomain when Lookup-1 and Lookup-2 fails", async () => {
@@ -201,8 +200,7 @@ describe("SalesforceCRMService", () => {
         // Account doesn't have email
         expect(contacts[0].email).toBe("");
         expect(contacts[0].recordType).toBe(SalesforceRecordEnum.ACCOUNT);
-        // FIXME: Seems like a bug as this should have been accountId but it is undefined
-        // expect(contacts[0].id).toBe(dominatingAccount.Id);
+        expect(contacts[0].id).toBe("accountId1");
       });
     });
 

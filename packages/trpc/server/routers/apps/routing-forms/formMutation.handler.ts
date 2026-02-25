@@ -164,12 +164,12 @@ export const formMutationHandler = async ({ ctx, input }: FormMutationHandlerOpt
       id: id,
       ...(teamId
         ? {
-            team: {
-              connect: {
-                id: teamId ?? undefined,
-              },
+          team: {
+            connect: {
+              id: teamId ?? undefined,
             },
-          }
+          },
+        }
         : null),
     },
     update: {
@@ -324,12 +324,7 @@ export const formMutationHandler = async ({ ctx, input }: FormMutationHandlerOpt
         ...entityPrismaWhereClause({ userId }),
         id: duplicateFrom,
       },
-      select: {
-        id: true,
-        fields: true,
-        routes: true,
-        userId: true,
-        teamId: true,
+      include: {
         team: {
           select: {
             id: true,
@@ -353,17 +348,9 @@ export const formMutationHandler = async ({ ctx, input }: FormMutationHandlerOpt
       });
     }
 
-    //TODO: Instead of parsing separately, use getSerializableForm. That would automatically remove deleted fields as well.
-    const fieldsParsed = zodFields.safeParse(sourceForm.fields);
-    const routesParsed = zodRoutes.safeParse(sourceForm.routes);
-    if (!fieldsParsed.success || !routesParsed.success) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Could not parse source form's fields or routes",
-      });
-    }
+    const serializedForm = await getSerializableForm({ form: sourceForm, withDeletedFields: false });
 
-    let fields: NonNullable<typeof fieldsParsed.data>, routes: NonNullable<typeof routesParsed.data>;
+    let fields: NonNullable<typeof serializedForm.fields>, routes: NonNullable<typeof serializedForm.routes>;
     if (shouldConnect) {
       routes = [
         // This connected route would automatically link the fields
@@ -373,23 +360,19 @@ export const formMutationHandler = async ({ ctx, input }: FormMutationHandlerOpt
         }),
       ];
       fields =
-        fieldsParsed.data
-          // Deleted fields in the form shouldn't be added to the new form
-          ?.filter((f) => !f.deleted)
-          .map((f) => {
-            return {
-              id: f.id,
-              routerId: sourceForm.id,
-              label: "",
-              type: "",
-            };
-          }) || [];
+        serializedForm.fields?.map((f) => {
+          return {
+            id: f.id,
+            routerId: sourceForm.id,
+            label: "",
+            type: "",
+          };
+        }) || [];
     } else {
       // Duplicate just routes and fields
       // We don't want name, description and responses to be copied
-      routes = routesParsed.data || [];
-      // FIXME: Deleted fields shouldn't come in duplicate
-      fields = fieldsParsed.data ? fieldsParsed.data.filter((f) => !f.deleted) : [];
+      routes = serializedForm.routes || [];
+      fields = serializedForm.fields || [];
     }
     return { teamId: sourceForm.teamId, routes, fields };
   }
