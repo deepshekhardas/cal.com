@@ -215,8 +215,6 @@ describe("Bookings Endpoints 2024-08-13", () => {
           if (responseDataIsBooking(responseBody.data)) {
             expect(responseBody.status).toEqual(SUCCESS_STATUS);
             expect(responseBody.data).toBeDefined();
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
             const data: BookingOutput_2024_08_13 = responseBody.data;
             expect(data.reschedulingReason).toEqual(body.reschedulingReason);
             expect(data.start).toEqual(body.start);
