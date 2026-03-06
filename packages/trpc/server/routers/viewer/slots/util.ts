@@ -130,7 +130,7 @@ function withSlotsCache(
 }
 
 export class AvailableSlotsService {
-  constructor(public readonly dependencies: IAvailableSlotsService) {}
+  constructor(public readonly dependencies: IAvailableSlotsService) { }
 
   private async _getReservedSlotsAndCleanupExpired({
     bookerClientUid,
@@ -852,15 +852,15 @@ export class AvailableSlotsService {
 
     const bookingLimits =
       eventType?.bookingLimits &&
-      typeof eventType?.bookingLimits === "object" &&
-      Object.keys(eventType?.bookingLimits).length > 0
+        typeof eventType?.bookingLimits === "object" &&
+        Object.keys(eventType?.bookingLimits).length > 0
         ? parseBookingLimit(eventType?.bookingLimits)
         : null;
 
     const durationLimits =
       eventType?.durationLimits &&
-      typeof eventType?.durationLimits === "object" &&
-      Object.keys(eventType?.durationLimits).length > 0
+        typeof eventType?.durationLimits === "object" &&
+        Object.keys(eventType?.durationLimits).length > 0
         ? parseDurationLimit(eventType?.durationLimits)
         : null;
 
@@ -1077,9 +1077,9 @@ export class AvailableSlotsService {
     } = input;
     const orgDetails = input?.orgSlug
       ? {
-          currentOrgDomain: input.orgSlug,
-          isValidOrgDomain: !!input.orgSlug && !RESERVED_SUBDOMAINS.includes(input.orgSlug),
-        }
+        currentOrgDomain: input.orgSlug,
+        isValidOrgDomain: !!input.orgSlug && !RESERVED_SUBDOMAINS.includes(input.orgSlug),
+      }
       : orgDomainConfig(ctx?.req);
 
     if (process.env.INTEGRATION_TEST_MODE === "true") {
@@ -1324,10 +1324,10 @@ export class AvailableSlotsService {
         const travelSchedules =
           isDefaultSchedule && !eventType.useBookerTimezone
             ? restrictionSchedule.user.travelSchedules.map((schedule) => ({
-                startDate: dayjs(schedule.startDate),
-                endDate: schedule.endDate ? dayjs(schedule.endDate) : undefined,
-                timeZone: schedule.timeZone,
-              }))
+              startDate: dayjs(schedule.startDate),
+              endDate: schedule.endDate ? dayjs(schedule.endDate) : undefined,
+              timeZone: schedule.timeZone,
+            }))
             : [];
 
         const { dateRanges: restrictionRanges } = buildDateRanges({
@@ -1422,9 +1422,9 @@ export class AvailableSlotsService {
           (
             item:
               | {
-                  time: dayjs.Dayjs;
-                  userIds?: number[] | undefined;
-                }
+                time: dayjs.Dayjs;
+                userIds?: number[] | undefined;
+              }
               | undefined
           ): item is {
             time: dayjs.Dayjs;
@@ -1468,7 +1468,22 @@ export class AvailableSlotsService {
 
           r[dateString] = r[dateString] || [];
           if (eventType?.onlyShowFirstAvailableSlot && r[dateString].length > 0) {
-            return r;
+            // If this is a seated event, check if the existing first slot is fully booked.
+            // If fully booked, remove it and allow the next available slot to take its place.
+            if (eventType.seatsPerTimeSlot) {
+              const existingSlot = r[dateString][0];
+              const existingBooking = existingSlot ? currentSeatsMap.get(existingSlot.time) : undefined;
+              const isFullyBooked =
+                existingBooking && existingBooking.attendees >= eventType.seatsPerTimeSlot;
+              if (isFullyBooked) {
+                // Replace the fully booked slot with the next available one
+                r[dateString] = [];
+              } else {
+                return r;
+              }
+            } else {
+              return r;
+            }
           }
 
           const existingBooking = currentSeatsMap.get(timeISO);
@@ -1600,23 +1615,23 @@ export class AvailableSlotsService {
 
     const troubleshooterData = enableTroubleshooter
       ? {
-          troubleshooter: {
-            routedTeamMemberIds: routedTeamMemberIds,
-            // One that Salesforce asked for
-            askedContactOwner: contactOwnerEmailFromInput,
-            // One that we used as per Routing skipContactOwner flag
-            consideredContactOwner: contactOwnerEmail,
-            // All hosts that have been checked for availability. If no routedTeamMemberIds are provided, this will be same as hosts.
-            routedHosts: usersWithCredentials.map((user) => {
-              return {
-                userId: user.id,
-              };
-            }),
-            hostsAfterSegmentMatching: allHosts.map((host) => ({
-              userId: host.user.id,
-            })),
-          },
-        }
+        troubleshooter: {
+          routedTeamMemberIds: routedTeamMemberIds,
+          // One that Salesforce asked for
+          askedContactOwner: contactOwnerEmailFromInput,
+          // One that we used as per Routing skipContactOwner flag
+          consideredContactOwner: contactOwnerEmail,
+          // All hosts that have been checked for availability. If no routedTeamMemberIds are provided, this will be same as hosts.
+          routedHosts: usersWithCredentials.map((user) => {
+            return {
+              userId: user.id,
+            };
+          }),
+          hostsAfterSegmentMatching: allHosts.map((host) => ({
+            userId: host.user.id,
+          })),
+        },
+      }
       : null;
 
     return {
