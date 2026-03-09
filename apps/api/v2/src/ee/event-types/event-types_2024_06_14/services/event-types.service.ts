@@ -36,7 +36,7 @@ export class EventTypesService_2024_06_14 {
     private readonly dbWrite: PrismaWriteService,
     private readonly schedulesRepository: SchedulesRepository_2024_06_11,
     private readonly eventTypeAccessService: EventTypeAccessService
-  ) {}
+  ) { }
 
   async createUserEventType(user: UserWithProfile, body: InputEventTransformed_2024_06_14) {
     if (body.bookingFields) {
@@ -120,9 +120,15 @@ export class EventTypesService_2024_06_14 {
   checkHasUserAccessibleEmailBookingField(bookingFields: (SystemField | CustomField)[]) {
     const emailField = bookingFields.find((field) => field.type === "email" && field.name === "email");
     const isEmailFieldRequiredAndVisible = emailField?.required && !emailField?.hidden;
-    if (!isEmailFieldRequiredAndVisible) {
+
+    const phoneField = bookingFields.find(
+      (field) => field.type === "phone" && field.name === "attendeePhoneNumber"
+    );
+    const isPhoneFieldRequiredAndVisible = phoneField?.required && !phoneField?.hidden;
+
+    if (!isEmailFieldRequiredAndVisible && !isPhoneFieldRequiredAndVisible) {
       throw new BadRequestException(
-        "checkIsEmailUserAccessible - Email booking field must be required and visible"
+        "checkIsEmailUserAccessible - Email or phone booking field must be required and visible"
       );
     }
   }

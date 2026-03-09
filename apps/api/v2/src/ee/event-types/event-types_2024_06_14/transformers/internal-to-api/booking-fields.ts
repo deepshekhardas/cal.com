@@ -310,19 +310,21 @@ const CustomFieldTypeEnum = z.enum([
 const CustomFieldsSchema = z.object({
   name: z.string(),
   type: CustomFieldTypeEnum,
-  label: z.string(),
+  label: z.string().optional(),
   labelAsSafeHtml: z.string().optional(),
   hidden: z.boolean().optional(),
-  sources: z.array(
-    z.object({
-      id: z.literal("user"),
-      type: z.literal("user"),
-      label: z.literal("User"),
-      fieldRequired: z.boolean().optional(),
-    })
-  ),
-  editable: z.enum(["user", "user-readonly"]),
-  required: z.boolean(),
+  sources: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.string(),
+        label: z.string(),
+        fieldRequired: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  editable: z.string().optional(),
+  required: z.boolean().optional(),
   placeholder: z.string().optional(),
   options: z
     .array(

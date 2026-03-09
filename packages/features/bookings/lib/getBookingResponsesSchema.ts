@@ -109,8 +109,8 @@ async function superRefineField({
   const phoneSchema = isPartialSchema
     ? z.string()
     : z.string().refine(async (val) => {
-        return isValidPhoneNumber(val);
-      });
+      return isValidPhoneNumber(val);
+    });
   // Tag the message with the input name so that the message can be shown at appropriate place
   const m = (message: string, options?: Record<string, unknown>) => {
     const translatedMessage = translateFn ? translateFn(message, options) : message;
@@ -444,7 +444,7 @@ function preprocess<T extends z.ZodType>({
       const isEmailFieldHidden = !!emailField?.hidden;
 
       // To prevent using user's session email as attendee's email, we set email to empty string
-      if (isEmailFieldHidden && !isAttendeePhoneNumberFieldHidden) {
+      if (isEmailFieldHidden && !isAttendeePhoneNumberFieldHidden && !responses["email"]) {
         responses["email"] = "";
       }
 

@@ -61,18 +61,18 @@ const isWithinRRHostSubset = <T extends { isFixed: boolean; user: { id: number }
     rrHostSubsetEnabled,
     schedulingType,
   }: { rrHostSubsetEnabled: boolean; schedulingType?: SchedulingType } = {
-    rrHostSubsetEnabled: false,
-    schedulingType: undefined,
-  }
+      rrHostSubsetEnabled: false,
+      schedulingType: undefined,
+    }
 ): host is T & { isFixed: false } => {
-  if (rrHostSubsetIds.length === 0 || !rrHostSubsetEnabled || schedulingType !== SchedulingType.ROUND_ROBIN) {
+  if (rrHostSubsetIds.length === 0 || schedulingType !== SchedulingType.ROUND_ROBIN) {
     return true;
   }
   return rrHostSubsetIds.includes(host.user.id);
 };
 
 export class QualifiedHostsService {
-  constructor(public readonly dependencies: IQualifiedHostsService) {}
+  constructor(public readonly dependencies: IQualifiedHostsService) { }
 
   async _findQualifiedHostsWithDelegationCredentials<
     T extends {
