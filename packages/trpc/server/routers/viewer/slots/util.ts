@@ -266,16 +266,13 @@ export class AvailableSlotsService {
     slotsMappedToDate,
     startTime,
     endTime,
-    timeZone,
+    timeZone = "UTC",
   }: {
     slotsMappedToDate: T;
     startTime: string;
     endTime: string;
     timeZone: string | undefined;
   }): T {
-    if (!timeZone) {
-      return slotsMappedToDate;
-    }
     const inputStartTime = dayjs(startTime).tz(timeZone);
     const inputEndTime = dayjs(endTime).tz(timeZone);
 
