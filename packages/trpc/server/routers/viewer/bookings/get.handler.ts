@@ -401,6 +401,34 @@ export async function getBookings({
       fullQuery = fullQuery.where("Booking.endTime", "<=", dayjs.utc(filters.beforeEndDate).toDate());
     }
 
+    // 8. UTM Filters
+    const utmFilters = [
+      { key: "utmSource", field: "source" },
+      { key: "utmMedium", field: "medium" },
+      { key: "utmCampaign", field: "campaign" },
+      { key: "utmTerm", field: "term" },
+      { key: "utmContent", field: "content" },
+    ] as const;
+
+    for (const { key, field } of utmFilters) {
+      const filterValue = filters?.[key];
+      if (filterValue) {
+        if (typeof filterValue === "string") {
+          fullQuery = fullQuery
+            .innerJoin("Tracking", "Tracking.id", "Booking.trackingId")
+            .where(`Tracking.${field}`, "=", filterValue.trim());
+        } else if (isTextFilterValue(filterValue)) {
+          fullQuery = addAdvancedTrackingWhereClause(
+            fullQuery,
+            field,
+            filterValue.data.operator,
+            filterValue.data.operand,
+            tables.includes("Tracking")
+          );
+        }
+      }
+    }
+
     return fullQuery;
   });
 
@@ -1108,6 +1136,49 @@ function addAdvancedAttendeeWhereClause(
       fullQuery = fullQuery.where(`Attendee.${key}`, "!=", "");
       break;
 
+    default:
+      break;
+  }
+
+  return fullQuery;
+}
+
+function addAdvancedTrackingWhereClause(
+  fullQuery: any,
+  key: string,
+  operator: string,
+  operand: string,
+  alreadyJoined: boolean
+) {
+  if (!alreadyJoined) {
+    fullQuery = fullQuery.innerJoin("Tracking", "Tracking.id", "Booking.trackingId");
+  }
+
+  switch (operator) {
+    case "contains":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "ilike", `%${operand}%`);
+      break;
+    case "doesNotContain":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "not ilike", `%${operand}%`);
+      break;
+    case "equals":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "=", operand);
+      break;
+    case "doesNotEqual":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "!=", operand);
+      break;
+    case "startsWith":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "ilike", `${operand}%`);
+      break;
+    case "endsWith":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "ilike", `%${operand}`);
+      break;
+    case "isEmpty":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "=", "");
+      break;
+    case "isNotEmpty":
+      fullQuery = fullQuery.where(`Tracking.${key}`, "!=", "");
+      break;
     default:
       break;
   }

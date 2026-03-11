@@ -8,7 +8,11 @@ export function useBookingFilters() {
   const dateRange = useFilterValue("dateRange", ZDateRangeFilterValue)?.data;
   const attendeeName = useFilterValue("attendeeName", ZTextFilterValue);
   const attendeeEmail = useFilterValue("attendeeEmail", ZTextFilterValue);
-  const bookingUid = useFilterValue("bookingUid", ZTextFilterValue)?.data?.operand as string | undefined;
+  const utmSource = useFilterValue("utmSource", ZTextFilterValue);
+  const utmMedium = useFilterValue("utmMedium", ZTextFilterValue);
+  const utmCampaign = useFilterValue("utmCampaign", ZTextFilterValue);
+  const utmTerm = useFilterValue("utmTerm", ZTextFilterValue);
+  const utmContent = useFilterValue("utmContent", ZTextFilterValue);
 
   return {
     eventTypeIds,
@@ -18,5 +22,10 @@ export function useBookingFilters() {
     attendeeName,
     attendeeEmail,
     bookingUid,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmTerm,
+    utmContent,
   };
 }

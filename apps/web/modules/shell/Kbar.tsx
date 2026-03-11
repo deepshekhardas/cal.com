@@ -28,7 +28,9 @@ import {
 } from "kbar";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { Button } from "@calcom/ui/components/button";
 
 type ShortcutArrayType = {
   shortcuts?: string[];
@@ -434,10 +436,31 @@ function renderResultItem(item: string | Action, active: boolean, t: (key: strin
 function NoResultsFound({ searchQuery }: { searchQuery: string }): JSX.Element {
   const { t } = useLocale();
   const helpUrl = `https://cal.com/help/welcome?search=${encodeURIComponent(searchQuery)}`;
+  const { query } = useKBar();
+  const router = useRouter();
+  const searchMutation = trpc.viewer.ai.search.useMutation();
+  const [aiActions, setAiActions] = useState<Action[]>([]);
+
+  useRegisterActions(aiActions, [aiActions]);
+
+  const handleAiSearch = async () => {
+    const response = await searchMutation.mutateAsync({ query: searchQuery });
+    if (response.suggestions) {
+      const suggestions = response.suggestions.map((suggestion: any) => ({
+        ...suggestion,
+        perform: suggestion.perform || (() => router.push(suggestion.href)),
+      }));
+      setAiActions(suggestions);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !searchMutation.isPending) {
+        if (aiActions.length > 0) {
+          // If we have AI actions, maybe the user wants to select one.
+          // For now, we keep the default behavior of opening help desk if they press enter without selecting.
+        }
         window.open(helpUrl, "_blank", "noopener,noreferrer");
       }
     };
@@ -446,20 +469,32 @@ function NoResultsFound({ searchQuery }: { searchQuery: string }): JSX.Element {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [helpUrl]);
+  }, [helpUrl, searchMutation.isPending, aiActions]);
 
   return (
     <div className="px-4 py-6 text-center">
       <p className="mb-3 text-sm text-subtle">{t("kbar_no_results_found")}</p>
-      <a
-        href={helpUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 text-emphasis text-sm transition hover:text-default">
-        <ExternalLinkIcon className="h-4 w-4" />
-        {t("kbar_search_help_desk_prefix")} <span className="underline">&quot;{searchQuery}&quot;</span>{" "}
-        {t("kbar_search_help_desk_suffix")}
-      </a>
+      <div className="flex flex-col items-center gap-4">
+        {aiActions.length === 0 && (
+          <Button
+            color="primary"
+            size="sm"
+            StartIcon="sparkles"
+            loading={searchMutation.isPending}
+            onClick={handleAiSearch}>
+            {t("ask_ai_for_help")}
+          </Button>
+        )}
+        <a
+          href={helpUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 text-emphasis text-sm transition hover:text-default">
+          <ExternalLinkIcon className="h-4 w-4" />
+          {t("kbar_search_help_desk_prefix")} <span className="underline">&quot;{searchQuery}&quot;</span>{" "}
+          {t("kbar_search_help_desk_suffix")}
+        </a>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,11 @@ type TGetInputSchemaFilters = {
   beforeUpdatedDate?: string;
   afterCreatedDate?: string;
   beforeCreatedDate?: string;
+  utmSource?: string | z.infer<typeof ZTextFilterValue>;
+  utmMedium?: string | z.infer<typeof ZTextFilterValue>;
+  utmCampaign?: string | z.infer<typeof ZTextFilterValue>;
+  utmTerm?: string | z.infer<typeof ZTextFilterValue>;
+  utmContent?: string | z.infer<typeof ZTextFilterValue>;
 };
 
 type TGetInputSchemaSort = {
@@ -59,6 +64,11 @@ export const ZGetInputSchema: z.ZodType<TGetInputSchema, z.ZodTypeDef, TGetInput
     beforeUpdatedDate: z.string().optional(),
     afterCreatedDate: z.string().optional(),
     beforeCreatedDate: z.string().optional(),
+    utmSource: z.union([z.string(), ZTextFilterValue]).optional(),
+    utmMedium: z.union([z.string(), ZTextFilterValue]).optional(),
+    utmCampaign: z.union([z.string(), ZTextFilterValue]).optional(),
+    utmTerm: z.union([z.string(), ZTextFilterValue]).optional(),
+    utmContent: z.union([z.string(), ZTextFilterValue]).optional(),
   }),
   limit: z.number().min(1).max(100),
   offset: z.number().default(0),

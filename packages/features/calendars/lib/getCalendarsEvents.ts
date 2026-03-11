@@ -70,21 +70,37 @@ export const getCalendarsEventsWithTimezones = async (
       log.info("Allowing getAvailability even without any selected calendars for Delegation Credential");
     }
     /** We extract external Ids so we don't cache too much */
-    const eventBusyDates =
-      (await c.getAvailabilityWithTimeZones?.({
-        dateFrom,
-        dateTo,
-        selectedCalendars: passedSelectedCalendars,
-        mode: "slots",
-        fallbackToPrimary: allowFallbackToPrimary,
-      })) || [];
+    const CAL_CALENDAR_FETCH_TIMEOUT_MS = 8000;
 
-    return eventBusyDates.map((event) => ({
-      ...event,
-      timeZone: normalizeTimezone(event.timeZone),
-    }));
+    const eventBusyDatesPromise = c.getAvailabilityWithTimeZones?.({
+      dateFrom,
+      dateTo,
+      selectedCalendars: passedSelectedCalendars,
+      mode: "slots",
+      fallbackToPrimary: allowFallbackToPrimary,
+    });
+
+    const timeoutPromise = new Promise<EventBusyDate[]>((_, reject) =>
+      setTimeout(() => reject(new Error("Calendar fetch timeout")), CAL_CALENDAR_FETCH_TIMEOUT_MS)
+    );
+
+    try {
+      const eventBusyDates = (await Promise.race([eventBusyDatesPromise, timeoutPromise])) || [];
+      return eventBusyDates.map((event: any) => ({
+        ...event,
+        timeZone: normalizeTimezone(event.timeZone),
+      }));
+    } catch (error) {
+      log.warn(`Failed to fetch availability with timezones for credential ${credential?.id}`, {
+        error: safeStringify(error),
+      });
+      return [];
+    }
   });
-  const awaitedResults = await Promise.all(results);
+
+  const settledResults = await Promise.allSettled(results);
+  const awaitedResults = settledResults.map((result) => (result.status === "fulfilled" ? result.value : []));
+
   return awaitedResults;
 };
 
@@ -181,26 +197,55 @@ const getCalendarsEvents = async (
         selectedCalendars: passedSelectedCalendars.map(getPiiFreeSelectedCalendar),
       })
     );
-    const eventBusyDates = await calendarService.getAvailability({
+
+    const CAL_CALENDAR_FETCH_TIMEOUT_MS = 8000;
+
+    const eventBusyDatesPromise = calendarService.getAvailability({
       dateFrom,
       dateTo,
       selectedCalendars: passedSelectedCalendars,
       mode,
       fallbackToPrimary: allowFallbackToPrimary,
     });
-    performance.mark("eventBusyDatesEnd");
-    performance.measure(
-      `[getAvailability for ${selectedCalendarIds.join(", ")}][$1]'`,
-      "eventBusyDatesStart",
-      "eventBusyDatesEnd"
+
+    const timeoutPromise = new Promise<EventBusyDate[]>((_, reject) =>
+      setTimeout(() => reject(new Error("Calendar fetch timeout")), CAL_CALENDAR_FETCH_TIMEOUT_MS)
     );
 
-    return eventBusyDates.map((a) => ({
-      ...a,
-      source: `${appId}`,
-    }));
+    try {
+      const eventBusyDates = await Promise.race([eventBusyDatesPromise, timeoutPromise]);
+      performance.mark("eventBusyDatesEnd");
+      performance.measure(
+        `[getAvailability for ${selectedCalendarIds.join(", ")}][$1]'`,
+        "eventBusyDatesStart",
+        "eventBusyDatesEnd"
+      );
+
+      return eventBusyDates.map((a) => ({
+        ...a,
+        source: `${appId}`,
+      }));
+    } catch (error) {
+      log.warn(`Failed to fetch availability for credential ${credential?.id}`, {
+        error: safeStringify(error),
+        selectedCalendarIds,
+      });
+      return [];
+    }
   });
-  const awaitedResults = await Promise.all(results);
+
+  const settledResults = await Promise.allSettled(results);
+  const awaitedResults = settledResults.map((result) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    } else {
+      log.error("Unexpected error in getCalendarsEvents result processing", {
+        error: safeStringify(result.reason),
+      });
+      return [];
+    }
+  });
+
   performance.mark("getBusyCalendarTimesEnd");
   performance.measure(
     `getBusyCalendarTimes took $1 for creds ${calendarCredentials.map((cred) => cred.id)}`,

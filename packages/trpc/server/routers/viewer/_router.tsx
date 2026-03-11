@@ -5,6 +5,7 @@ import { loggedInViewerRouter } from "../loggedInViewer/_router";
 import { publicViewerRouter } from "../publicViewer/_router";
 import { timezonesRouter } from "../publicViewer/timezones/_router";
 import { adminRouter } from "./admin/_router";
+import { aiRouter } from "./ai/_router";
 import { aiVoiceAgentRouter } from "./aiVoiceAgent/_router";
 import { apiKeysRouter } from "./apiKeys/_router";
 import { appsRouter } from "./apps/_router";
@@ -92,5 +93,6 @@ export const viewerRouter = router({
   holidays: holidaysRouter,
   travelSchedules: travelSchedulesRouter,
   aiVoiceAgent: aiVoiceAgentRouter,
+  ai: aiRouter,
   phoneNumber: phoneNumberRouter,
 });
