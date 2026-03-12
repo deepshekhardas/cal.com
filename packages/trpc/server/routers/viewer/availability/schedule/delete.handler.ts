@@ -1,5 +1,6 @@
 import { HostRepository } from "@calcom/features/host/repositories/HostRepository";
 import { prisma } from "@calcom/prisma";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { TRPCError } from "@trpc/server";
 
@@ -66,4 +67,6 @@ export const deleteHandler = async ({ input, ctx }: DeleteOptions) => {
       id: input.scheduleId,
     },
   });
+
+  await AvailabilityCacheService.invalidateUserAvailability(user.id);
 };

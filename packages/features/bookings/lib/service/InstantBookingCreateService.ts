@@ -25,6 +25,7 @@ import { getTranslation } from "@calcom/i18n/server";
 import type { PrismaClient } from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
 import { BookingStatus, WebhookTriggerEvents } from "@calcom/prisma/enums";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { instantMeetingSubscriptionSchema as subscriptionSchema } from "../dto/schema";
 import { WebhookVersion } from "../../../webhooks/lib/interface/IWebhookRepository";
@@ -292,6 +293,11 @@ export async function handler(
   };
 
   const newBooking = await prisma.booking.create(createBookingObj);
+
+  if (newBooking.userId) {
+    // Invalidate availability cache for the user
+    await AvailabilityCacheService.invalidateUserAvailability(newBooking.userId);
+  }
 
   // Create Instant Meeting Token
 

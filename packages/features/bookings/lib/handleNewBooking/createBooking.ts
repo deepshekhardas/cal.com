@@ -7,6 +7,7 @@ import { isPrismaObjOrUndefined } from "@calcom/lib/isPrismaObj";
 import { withReporting } from "@calcom/lib/sentryWrapper";
 import prisma from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 import { BookingStatus } from "@calcom/prisma/enums";
 import type { CreationSource } from "@calcom/prisma/enums";
 import type { CalendarEvent } from "@calcom/types/Calendar";
@@ -187,6 +188,11 @@ async function saveBooking(
     const booking = await tx.booking.create(createBookingObj);
     if (reroutingFormResponseUpdateData) {
       await tx.app_RoutingForms_FormResponse.update(reroutingFormResponseUpdateData);
+    }
+
+    if (booking.userId) {
+      // Invalidate availability cache for the user
+      await AvailabilityCacheService.invalidateUserAvailability(booking.userId);
     }
 
     return { ...booking, userUuid: booking.user?.uuid ?? null };

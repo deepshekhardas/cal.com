@@ -10,7 +10,8 @@ import sendPayload from "@calcom/features/webhooks/lib/sendPayload";
 import { getTranslation } from "@calcom/i18n/server";
 import prisma from "@calcom/prisma";
 import { WebhookTriggerEvents } from "@calcom/prisma/enums";
-import type { TrpcSessionUser } from "@calcom/trpc/server/types";
+import { ActionType } from "@calcom/prisma/enums";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { TRPCError } from "@trpc/server";
 
@@ -392,6 +393,8 @@ export const outOfOfficeCreateOrUpdate = async ({ ctx, input }: TBookingRedirect
       );
     })
   );
+
+  await AvailabilityCacheService.invalidateUserAvailability(oooUserId);
 
   return {};
 };

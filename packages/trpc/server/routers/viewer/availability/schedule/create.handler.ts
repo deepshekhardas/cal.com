@@ -1,6 +1,7 @@
 import { DEFAULT_SCHEDULE, getAvailabilityFromSchedule } from "@calcom/lib/availability";
 import { prisma } from "@calcom/prisma";
 import type { Prisma } from "@calcom/prisma/client";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { TRPCError } from "@trpc/server";
 
@@ -72,6 +73,8 @@ export const createHandler = async ({ input, ctx }: CreateOptions) => {
       },
     });
   }
+
+  await AvailabilityCacheService.invalidateUserAvailability(user.id);
 
   return { schedule };
 };

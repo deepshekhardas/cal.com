@@ -5,7 +5,8 @@ import { HttpError } from "@calcom/lib/http-error";
 import { transformScheduleToAvailabilityForAtom } from "@calcom/lib/schedules/transformers/for-atom";
 import type { PrismaClient } from "@calcom/prisma";
 import { z } from "zod";
-import type { UserFromSession } from "@calcom/features/auth/lib/userFromSessionUtils";
+import { UserFromSession } from "@calcom/features/auth/lib/userFromSessionUtils";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 import { ScheduleRepository } from "../repositories/ScheduleRepository";
 
 export const ZUpdateInputSchema = z.object({
@@ -152,6 +153,8 @@ export class ScheduleService {
     });
 
     const userAvailability = transformScheduleToAvailabilityForAtom(schedule);
+
+    await AvailabilityCacheService.invalidateUserAvailability(user.id);
 
     return {
       schedule,

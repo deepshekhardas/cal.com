@@ -43,6 +43,7 @@ import type { TimeRange, WorkingHours as WorkingHoursWithUserId } from "@calcom/
 import type { Ensure, Optional } from "@calcom/types/utils";
 import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
+import { AvailabilityCacheService } from "./AvailabilityCacheService";
 import { detectEventTypeScheduleForUser } from "./detectEventTypeScheduleForUser";
 
 const log = logger.getSubLogger({ prefix: ["getUserAvailability"] });
@@ -89,6 +90,7 @@ type GetUserAvailabilityParams = {
   returnDateOverrides: boolean;
   bypassBusyCalendarTimes?: boolean;
   silentlyHandleCalendarFailures?: boolean;
+  shouldServeCache?: boolean;
   mode?: CalendarFetchMode;
 };
 
@@ -376,6 +378,7 @@ export class UserAvailabilityService {
       silentlyHandleCalendarFailures = false,
       mode = "none",
       withSource = false,
+      shouldServeCache = false,
     } = params;
 
     log.debug(
@@ -387,6 +390,31 @@ export class UserAvailabilityService {
     const user = initialData?.user || null;
     if (!user) {
       throw new HttpError({ statusCode: 404, message: "No user found in getUserAvailability" });
+    }
+
+    let cacheKey = "";
+    if (shouldServeCache) {
+      const version = await AvailabilityCacheService.getUserAvailabilityVersion(user.id);
+      cacheKey = AvailabilityCacheService.generateCacheKey(user.id, version, {
+        ...params,
+        dateFrom: dateFrom.toISOString(),
+        dateTo: dateTo.toISOString(),
+      });
+      const cachedData = await AvailabilityCacheService.getCachedAvailability<GetUserAvailabilityResult>(cacheKey);
+      if (cachedData) {
+        log.debug(`Returning cached availability for user ${user.id}`);
+        return {
+          ...cachedData,
+          dateRanges: cachedData.dateRanges.map((range) => ({
+            start: dayjs(range.start),
+            end: dayjs(range.end),
+          })),
+          oooExcludedDateRanges: cachedData.oooExcludedDateRanges.map((range) => ({
+            start: dayjs(range.start),
+            end: dayjs(range.end),
+          })),
+        };
+      }
     }
 
     let eventType: EventType | null = initialData?.eventType || null;
@@ -658,6 +686,10 @@ export class UserAvailabilityService {
       currentSeats,
       datesOutOfOffice,
     };
+
+    if (shouldServeCache && cacheKey) {
+      await AvailabilityCacheService.setCachedAvailability(cacheKey, result);
+    }
 
     log.debug(
       `EventType: ${eventTypeId} | User: ${username} (ID: ${userId}) - Result: ${safeStringify(result)}`

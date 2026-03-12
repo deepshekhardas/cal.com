@@ -2,6 +2,7 @@ import { sendBookingRedirectNotification } from "@calcom/emails/workflow-email-s
 import { getTranslation } from "@calcom/i18n/server";
 import prisma from "@calcom/prisma";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { TRPCError } from "@trpc/server";
 
@@ -81,6 +82,8 @@ export const outOfOfficeEntryDelete = async ({ ctx, input }: TBookingRedirectDel
     dates: `${formattedStartDate} - ${formattedEndDate}`,
     action: "cancel",
   });
+
+  await AvailabilityCacheService.invalidateUserAvailability(oooUserId);
 
   return {};
 };

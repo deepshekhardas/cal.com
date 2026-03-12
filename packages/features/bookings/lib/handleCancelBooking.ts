@@ -51,6 +51,7 @@ import { getTimeFormatStringFromUserTimeFormat } from "@calcom/lib/timeFormat";
 import prisma from "@calcom/prisma";
 import type { WebhookTriggerEvents, WorkflowMethods } from "@calcom/prisma/enums";
 import { BookingStatus } from "@calcom/prisma/enums";
+import { AvailabilityCacheService } from "@calcom/features/availability/lib/AvailabilityCacheService";
 
 import { isCancellationReasonRequired } from "./cancellationReason";
 import type { EventTypeMetadata } from "@calcom/prisma/zod-utils";
@@ -712,25 +713,30 @@ async function handler(input: CancelBookingInput, dependencies?: Dependencies) {
     log.error("Error handlingInternalNote", safeStringify({ error }));
   }
 
-  try {
-    // TODO: if emails fail try to requeue them
-    if (!platformClientId || (platformClientId && arePlatformEmailsEnabled))
-      await sendCancelledEmailsAndSMS(
-        evt,
-        { eventName: bookingToDelete?.eventType?.eventName },
-        bookingToDelete?.eventType?.metadata as EventTypeMetadata
-      );
-  } catch (error) {
-    log.error("Error deleting event", error);
-  }
-  return {
-    success: true,
-    message: "Booking successfully cancelled.",
-    onlyRemovedAttendee: false,
-    bookingId: bookingToDelete.id,
-    bookingUid: bookingToDelete.uid,
-    isPlatformManagedUserBooking: bookingToDelete.user.isPlatformManaged,
-  } satisfies HandleCancelBookingResponse;
+    try {
+      // TODO: if emails fail try to requeue them
+      if (!platformClientId || (platformClientId && arePlatformEmailsEnabled))
+        await sendCancelledEmailsAndSMS(
+          evt,
+          { eventName: bookingToDelete?.eventType?.eventName },
+          bookingToDelete?.eventType?.metadata as EventTypeMetadata
+        );
+    } catch (error) {
+      log.error("Error deleting event", error);
+    }
+
+    if (bookingToDelete.userId) {
+      await AvailabilityCacheService.invalidateUserAvailability(bookingToDelete.userId);
+    }
+
+    return {
+      success: true,
+      message: "Booking successfully cancelled.",
+      onlyRemovedAttendee: false,
+      bookingId: bookingToDelete.id,
+      bookingUid: bookingToDelete.uid,
+      isPlatformManagedUserBooking: bookingToDelete.user.isPlatformManaged,
+    } satisfies HandleCancelBookingResponse;
 }
 
 type BookingCancelServiceDependencies = {

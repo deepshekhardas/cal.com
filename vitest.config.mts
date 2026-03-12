@@ -98,6 +98,10 @@ export default defineConfig({
           "packages/embeds/embed-snippet/src/index.ts"
         ),
       },
+      {
+        find: "@calcom/i18n",
+        replacement: path.resolve(__dirname, "packages/i18n"),
+      },
     ],
   },
   test: {
