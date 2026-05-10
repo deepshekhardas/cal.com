@@ -85,7 +85,20 @@ export function isPrivateIP(ip: string): boolean {
 // Check if hostname is a blocked cloud metadata endpoint or localhost
 export function isBlockedHostname(hostname: string): boolean {
   const normalized = normalizeHostname(hostname);
-  return BLOCKED_HOSTNAMES.includes(normalized);
+
+  if (BLOCKED_HOSTNAMES.includes(normalized)) {
+    return true;
+  }
+
+  if (
+    normalized === "localhost" ||
+    normalized.endsWith(".localhost") ||
+    normalized.endsWith(".local")
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 // Check if hostname is a cloud metadata endpoint (blocked even on self-hosted)

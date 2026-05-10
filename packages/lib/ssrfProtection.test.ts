@@ -39,7 +39,14 @@ describe("isPrivateIP", () => {
     expect(isPrivateIP(ip)).toBe(false);
   });
 
-  it.each(["::1", "::", "fc00::1", "fd00::1", "fe80::1"])("blocks private IPv6 %s", (ip) => {
+it.each([
+    "::1",
+    "::",
+    "fc00::1", // ULA fc00::/8
+    "fd00::1", // ULA fd00::/8
+    "fe80::1", // link-local fe80::/10 start
+    "febf::1", // link-local fe80::/10 end
+  ])("blocks private IPv6 %s", (ip) => {
     expect(isPrivateIP(ip)).toBe(true);
   });
 
@@ -63,6 +70,17 @@ describe("isBlockedHostname", () => {
     "169.254.169.254.", // trailing dot normalization
     "METADATA.GOOGLE.INTERNAL", // case insensitive
   ])("blocks cloud metadata endpoint %s", (hostname) => {
+    expect(isBlockedHostname(hostname)).toBe(true);
+  });
+
+  it.each([
+    "localhost.", // trailing dot
+    "foo.localhost", // subdomain of localhost
+    "bar.localhost.", // subdomain with trailing dot
+    "app.localhost", // another subdomain
+    "myhost.local", // .local suffix
+    "service.local.", // .local with trailing dot
+  ])("blocks localhost bypass attempts %s", (hostname) => {
     expect(isBlockedHostname(hostname)).toBe(true);
   });
 
@@ -117,10 +135,13 @@ describe("validateUrlForSSRFSync", () => {
     expect(result).toEqual({ isValid: false, error: expectedError });
   });
 
-  it.each([
+it.each([
     ["https://[::1]/", "Private IP address"],
     ["https://[fe80::1]/path", "Private IP address"],
     ["https://[fc00::1]:8080/", "Private IP address"],
+    ["https://[fd00::1]/", "Private IP address"], // ULA fd00::/8
+    ["https://[febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/", "Private IP address"], // fe80::/10 end
+    ["https://[fe80:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/", "Private IP address"], // fe80::/10 middle
     ["https://[::ffff:127.0.0.1]/", "Private IP address"],
   ])("blocks IPv6 private addresses with brackets %s", (url, expectedError) => {
     const result = validateUrlForSSRFSync(url);
