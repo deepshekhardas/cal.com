@@ -112,7 +112,7 @@ export class BookingEmailSmsHandler {
     this.log.warn("Unknown email/SMS action requested.", { action });
   }
 
-  /**
+/**
    * Handles notifications for a RESCHEDULED booking.
    */
   private async _handleRescheduled(data: RescheduleEmailAndSmsPayload) {
@@ -125,15 +125,21 @@ export class BookingEmailSmsHandler {
     } = data;
 
     const { sendRescheduledEmailsAndSMS } = await import("@calcom/emails/email-manager");
-    await sendRescheduledEmailsAndSMS(
-      {
-        ...evt,
-        additionalInformation,
-        additionalNotes,
-        cancellationReason: `$RCH$${rescheduleReason || ""}`,
-      },
-      metadata
-    );
+    setImmediate(async () => {
+      try {
+        await sendRescheduledEmailsAndSMS(
+          {
+            ...evt,
+            additionalInformation,
+            additionalNotes,
+            cancellationReason: `$RCH$${rescheduleReason || ""}`,
+          },
+          metadata
+        );
+      } catch (err) {
+        this.log.error("Failed to send rescheduled emails in background", err);
+      }
+    });
   }
 
   /**
@@ -222,7 +228,7 @@ export class BookingEmailSmsHandler {
 
     const reassignedTo = users.find(
       (user) => !user.isFixed && newBookedMembers.some((member) => member.email === user.email)
-    );
+);
 
     const {
       sendRoundRobinRescheduledEmailsAndSMS,
@@ -230,34 +236,36 @@ export class BookingEmailSmsHandler {
       sendRoundRobinCancelledEmailsAndSMS,
     } = await import("@calcom/emails/email-manager");
 
-    try {
-      await Promise.all([
-        sendRoundRobinRescheduledEmailsAndSMS(
-          { ...copyEventAdditionalInfo, iCalUID },
-          rescheduledMembers,
-          metadata
-        ),
-        sendReassignedScheduledEmailsAndSMS({
-          calEvent: copyEventAdditionalInfo,
-          members: newBookedMembers,
-          eventTypeMetadata: metadata,
-        }),
-        sendRoundRobinCancelledEmailsAndSMS(
-          cancelledRRHostEvt,
-          cancelledMembers,
-          metadata,
-          reassignedTo
-            ? {
-                name: reassignedTo.name,
-                email: reassignedTo.email,
-                ...(isRescheduledByBooker && { reason: "Booker Rescheduled" }),
-              }
-            : undefined
-        ),
-      ]);
-    } catch (err) {
-      this.log.error("Failed to send rescheduled round robin event related emails", err);
-    }
+    setImmediate(async () => {
+      try {
+        await Promise.all([
+          sendRoundRobinRescheduledEmailsAndSMS(
+            { ...copyEventAdditionalInfo, iCalUID },
+            rescheduledMembers,
+            metadata
+          ),
+          sendReassignedScheduledEmailsAndSMS({
+            calEvent: copyEventAdditionalInfo,
+            members: newBookedMembers,
+            eventTypeMetadata: metadata,
+          }),
+          sendRoundRobinCancelledEmailsAndSMS(
+            cancelledRRHostEvt,
+            cancelledMembers,
+            metadata,
+            reassignedTo
+              ? {
+                  name: reassignedTo.name,
+                  email: reassignedTo.email,
+                  ...(isRescheduledByBooker && { reason: "Booker Rescheduled" }),
+                }
+              : undefined
+          ),
+        ]);
+      } catch (err) {
+        this.log.error("Failed to send rescheduled round robin emails in background", err);
+      }
+    });
   }
 
   /**
@@ -285,19 +293,21 @@ export class BookingEmailSmsHandler {
       isAttendeeConfirmationEmailDisabled = allowDisablingAttendeeConfirmationEmails(workflows);
     }
 
-    const { sendScheduledEmailsAndSMS } = await import("@calcom/emails/email-manager");
+const { sendScheduledEmailsAndSMS } = await import("@calcom/emails/email-manager");
 
-    try {
-      await sendScheduledEmailsAndSMS(
-        { ...evt, additionalInformation, additionalNotes, customInputs },
-        eventNameObject,
-        isHostConfirmationEmailsDisabled,
-        isAttendeeConfirmationEmailDisabled,
-        metadata
-      );
-    } catch (err) {
-      this.log.error("Failed to send scheduled event related emails", err);
-    }
+    setImmediate(async () => {
+      try {
+        await sendScheduledEmailsAndSMS(
+          { ...evt, additionalInformation, additionalNotes, customInputs },
+          eventNameObject,
+          isHostConfirmationEmailsDisabled,
+          isAttendeeConfirmationEmailDisabled,
+          metadata
+        );
+      } catch (err) {
+        this.log.error("Failed to send scheduled emails in background", err);
+      }
+    });
   }
 
   /**
@@ -321,18 +331,20 @@ export class BookingEmailSmsHandler {
 
     const eventWithNotes = { ...evt, additionalNotes };
 
-    const { sendOrganizerRequestEmail, sendAttendeeRequestEmailAndSMS } = await import(
+const { sendOrganizerRequestEmail, sendAttendeeRequestEmailAndSMS } = await import(
       "@calcom/emails/email-manager"
     );
 
-    try {
-      await Promise.all([
-        sendOrganizerRequestEmail(eventWithNotes, metadata),
-        sendAttendeeRequestEmailAndSMS(eventWithNotes, attendees[0], metadata),
-      ]);
-    } catch (err) {
-      this.log.error("Failed to send requested event related emails", err);
-    }
+    setImmediate(async () => {
+      try {
+        await Promise.all([
+          sendOrganizerRequestEmail(eventWithNotes, metadata),
+          sendAttendeeRequestEmailAndSMS(eventWithNotes, attendees[0], metadata),
+        ]);
+      } catch (err) {
+        this.log.error("Failed to send requested emails in background", err);
+      }
+    });
   }
 
   /**
