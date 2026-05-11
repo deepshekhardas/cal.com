@@ -1,4 +1,5 @@
 import { shallow } from "zustand/shallow";
+import { useEffect, useRef } from "react";
 
 import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
@@ -25,31 +26,43 @@ const useMoveToNextMonthOnNoAvailability = ({
   isLoading: boolean;
   onMonthChange: (date: Dayjs) => void;
 }) => {
-  if (isLoading) {
-    return {
-      moveToNextMonthOnNoAvailability: () => {
-        /* return noop until ready */
-      },
-    };
-  }
+  const prevDaysRef = useRef<string[]>([]);
+  const hasInitializedRef = useRef(false);
 
-  const nonEmptyScheduleDaysInBrowsingMonth = nonEmptyScheduleDays.filter((date) =>
-    dayjs(date).isSame(browsingDate, "month")
-  );
-
-  const moveToNextMonthOnNoAvailability = () => {
-    const currentMonth = dayjs().startOf("month").format("YYYY-MM");
-    const browsingMonth = browsingDate.format("YYYY-MM");
-    // Not meeting the criteria to move to next month
-    // Has to be currentMonth and it must have all days unbookable
-    if (currentMonth != browsingMonth || nonEmptyScheduleDaysInBrowsingMonth.length) {
+  useEffect(() => {
+    if (isLoading) {
       return;
     }
-    onMonthChange(browsingDate.add(1, "month"));
-  };
-  return {
-    moveToNextMonthOnNoAvailability,
-  };
+
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      prevDaysRef.current = nonEmptyScheduleDays;
+      return;
+    }
+
+    const daysChanged =
+      nonEmptyScheduleDays.length !== prevDaysRef.current.length ||
+      !nonEmptyScheduleDays.every((d) => prevDaysRef.current.includes(d));
+
+    if (!daysChanged) {
+      return;
+    }
+
+    prevDaysRef.current = nonEmptyScheduleDays;
+
+    const nonEmptyScheduleDaysInBrowsingMonth = nonEmptyScheduleDays.filter((date) =>
+      dayjs(date).isSame(browsingDate, "month")
+    );
+
+    const currentMonth = dayjs().startOf("month").format("YYYY-MM");
+    const browsingMonth = browsingDate.format("YYYY-MM");
+
+    if (currentMonth === browsingMonth && nonEmptyScheduleDaysInBrowsingMonth.length === 0) {
+      onMonthChange(browsingDate.add(1, "month"));
+    }
+  }, [isLoading, nonEmptyScheduleDays, browsingDate, onMonthChange]);
+
+  return {};
 };
 
 export const DatePicker = ({
@@ -99,16 +112,15 @@ export const DatePicker = ({
     setDayCount(null); // Whenever the month is changed, we nullify getting X days
   };
 
-  const nonEmptyScheduleDays = useNonEmptyScheduleDays(slots);
+const nonEmptyScheduleDays = useNonEmptyScheduleDays(slots);
   const browsingDate = month ? dayjs(month) : dayjs().startOf("month");
 
-  const { moveToNextMonthOnNoAvailability } = useMoveToNextMonthOnNoAvailability({
+  useMoveToNextMonthOnNoAvailability({
     browsingDate,
     nonEmptyScheduleDays,
     onMonthChange,
     isLoading: isLoading ?? true,
   });
-  moveToNextMonthOnNoAvailability();
 
   // Determine if this is a compact sidebar view based on layout
   const isCompact = layout !== "month_view" && layout !== "mobile";

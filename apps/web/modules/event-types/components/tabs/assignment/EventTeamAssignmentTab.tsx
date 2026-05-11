@@ -217,7 +217,7 @@ const FixedHosts = ({
             </p>
           </div>
           <div className="border-subtle rounded-b-md border border-t-0 px-6">
-            <AddMembersWithSwitch
+<AddMembersWithSwitch
               teamId={teamId}
               groupId={null}
               teamMembers={teamMembers}
@@ -229,6 +229,7 @@ const FixedHosts = ({
               isFixed={true}
               customClassNames={customClassNames?.addMembers}
               onActive={handleFixedHostsActivation}
+              allowEmailInvites
             />
           </div>
         </>
@@ -246,7 +247,7 @@ const FixedHosts = ({
           onCheckedChange={handleFixedHostsToggle}
           childrenClassName={classNames("lg:ml-0", customClassNames?.children)}>
           <div className="border-subtle flex flex-col gap-6 rounded-bl-md rounded-br-md border border-t-0 px-6">
-            <AddMembersWithSwitch
+<AddMembersWithSwitch
               data-testid="fixed-hosts-select"
               groupId={null}
               placeholder={t("add_a_member")}
@@ -260,6 +261,7 @@ const FixedHosts = ({
               automaticAddAllEnabled={!isRoundRobinEvent}
               isFixed={true}
               onActive={handleFixedHostsActivation}
+              allowEmailInvites
             />
           </div>
         </SettingsToggle>
@@ -411,7 +413,7 @@ const RoundRobinHosts = ({
     [getValues, setValue, teamMembers]
   );
 
-  const AddMembersWithSwitchComponent = ({
+const AddMembersWithSwitchComponent = ({
     groupId,
     containerClassName,
   }: {
@@ -435,6 +437,7 @@ const RoundRobinHosts = ({
         containerClassName={containerClassName || (assignAllTeamMembers ? "-mt-4" : "")}
         onActive={() => handleMembersActivation(groupId)}
         customClassNames={customClassNames?.addMembers}
+        allowEmailInvites
       />
     );
   };
