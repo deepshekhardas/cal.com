@@ -850,14 +850,19 @@ async function handler(
     })
   );
 
-  const user = eventType.users.find((user) => user.id === eventType.userId);
+const user = eventType.users.find((user) => user.id === eventType.userId);
   const userSchedule = user?.schedules.find((schedule) => schedule.id === user?.defaultScheduleId);
   const eventTimeZone = eventType.schedule?.timeZone ?? userSchedule?.timeZone;
+
+  const isHostRescheduling = reqBody.rescheduleUid && userId && eventType.userId && userId === eventType.userId;
+  const eventTypeForValidation = isHostRescheduling
+    ? { ...eventType, minimumBookingNotice: null }
+    : eventType;
 
   await validateBookingTimeIsNotOutOfBounds<typeof eventType>(
     reqBody.start,
     reqBody.timeZone,
-    eventType,
+    eventTypeForValidation,
     eventTimeZone,
     tracingLogger
   );
@@ -2183,12 +2188,37 @@ async function handler(
     });
 
     let metadata: AdditionalInformation = {};
-    metadata = videoMetadata;
+metadata = videoMetadata;
     videoCallUrl = _videoCallUrl;
 
+    const allIntegrationsFailed = results && results.length > 0 && results.every((res) => !res.success);
     const isThereAnIntegrationError = results && results.some((res) => !res.success);
 
-    if (isThereAnIntegrationError) {
+    if (allIntegrationsFailed) {
+      const error = {
+        errorCode: "BookingReschedulingMeetingFailed",
+        message: "Booking Rescheduling failed",
+      };
+
+      tracingLogger.error(
+        `EventManager.reschedule failure in all integrations ${organizerUser.username}, rolling back`,
+        safeStringify({ error, results })
+      );
+
+      if (!isDryRun && originalRescheduledBooking?.id) {
+        await deps.prismaClient.booking.update({
+          where: { id: originalRescheduledBooking.id },
+          data: {
+            status: BookingStatus.CANCELLED,
+            cancellationReason: "Calendar sync failed during reschedule - rolled back",
+          },
+        });
+        throw new HttpError({
+          statusCode: 400,
+          message: "Failed to reschedule calendar events. Booking has been cancelled.",
+        });
+      }
+    } else if (isThereAnIntegrationError) {
       const error = {
         errorCode: "BookingReschedulingMeetingFailed",
         message: "Booking Rescheduling failed",
@@ -2309,7 +2339,7 @@ async function handler(
     // to the default description when we are sending the emails.
     evt.description = eventType.description;
 
-    results = createManager.results;
+results = createManager.results;
     referencesToCreate = createManager.referencesToCreate;
     videoCallUrl = evt.videoCallData && evt.videoCallData.url ? evt.videoCallData.url : null;
 
@@ -2320,9 +2350,23 @@ async function handler(
       };
 
       tracingLogger.error(
-        `EventManager.create failure in some of the integrations ${organizerUser.username}`,
+        `EventManager.create failure in all integrations ${organizerUser.username}, rolling back booking`,
         safeStringify({ error, results })
       );
+
+      if (!isDryRun && booking?.id) {
+        await deps.prismaClient.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: BookingStatus.CANCELLED,
+            cancellationReason: "Calendar sync failed - booking rolled back",
+          },
+        });
+        throw new HttpError({
+          statusCode: 400,
+          message: "Failed to create calendar events. Booking has been cancelled.",
+        });
+      }
     } else {
       const additionalInformation: AdditionalInformation = {};
 

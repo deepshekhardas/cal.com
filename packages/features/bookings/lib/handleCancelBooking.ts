@@ -208,11 +208,26 @@ async function handler(input: CancelBookingInput, dependencies?: Dependencies) {
     throw new HttpError({ statusCode: 400, message: "User not found" });
   }
 
-  if (bookingToDelete.eventType?.disableCancelling) {
+if (bookingToDelete.eventType?.disableCancelling) {
     throw new HttpError({
       statusCode: 400,
       message: "This event type does not allow cancellations",
     });
+  }
+
+  const minimumCancellationNotice = bookingToDelete.eventType?.minimumCancellationNotice;
+  if (minimumCancellationNotice && minimumCancellationNotice > 0 && bookingToDelete.startTime) {
+    const now = new Date();
+    const bookingStart = new Date(bookingToDelete.startTime);
+    const timeUntilBooking = bookingStart.getTime() - now.getTime();
+    const minimumNoticeInMs = minimumCancellationNotice * 60 * 1000;
+
+    if (timeUntilBooking < minimumNoticeInMs) {
+      throw new HttpError({
+        statusCode: 400,
+        message: `Bookings can only be cancelled at least ${minimumCancellationNotice} minutes before the start time`,
+      });
+    }
   }
 
   const isCancellationUserHost =

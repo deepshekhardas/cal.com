@@ -25,6 +25,7 @@ import { Price } from "@calcom/features/bookings/components/event-meta/Price";
 import { getCalendarLinks, CalendarLinkType } from "@calcom/features/bookings/lib/getCalendarLinks";
 import { RATING_OPTIONS, validateRating } from "@calcom/features/bookings/lib/rating";
 import { isWithinMinimumRescheduleNotice as isWithinMinimumRescheduleNoticeUtil } from "@calcom/features/bookings/lib/reschedule/isWithinMinimumRescheduleNotice";
+import { isWithinMinimumCancellationNotice as isWithinMinimumCancellationNoticeUtil } from "@calcom/features/bookings/lib/reschedule/isWithinMinimumCancellationNotice";
 import type { nameObjectSchema } from "@calcom/features/eventtypes/lib/eventNaming";
 import { getEventName } from "@calcom/features/eventtypes/lib/eventNaming";
 import { shouldShowFieldInCustomResponses } from "@calcom/lib/bookings/SystemField";
@@ -393,18 +394,27 @@ export default function Success(props: PageProps) {
 
   const canCancelOrReschedule = !eventType?.disableCancelling || !eventType?.disableRescheduling;
 
-  const canCancel = !eventType?.disableCancelling;
+const canCancel = !eventType?.disableCancelling;
   const canReschedule = !eventType?.disableRescheduling;
 
   // Check if reschedule should be disabled due to minimum reschedule notice
   // Use server-side computed isHost prop instead of client-side computation
   const isWithinMinimumRescheduleNotice = isHost
-    ? false // Organizers can always reschedule
+    ? false
     : isWithinMinimumRescheduleNoticeUtil(
         bookingInfo?.startTime ?? null,
         eventType?.minimumRescheduleNotice ?? null
       );
   const isRescheduleDisabled = !canReschedule || isWithinMinimumRescheduleNotice;
+
+  // Check if cancel should be disabled due to minimum cancellation notice
+  const isWithinMinimumCancellationNotice = isHost
+    ? false
+    : isWithinMinimumCancellationNoticeUtil(
+        bookingInfo?.startTime ?? null,
+        eventType?.minimumCancellationNotice ?? null
+      );
+  const isCancelDisabled = !canCancel || isWithinMinimumCancellationNotice;
   const paymentStatusMessage = usePaymentStatus({
     bookingStatus: bookingInfo.status,
     startTime: bookingInfo.startTime,
@@ -869,11 +879,11 @@ export default function Success(props: PageProps) {
                       canCancelOrReschedule &&
                       (!isCancellationMode ? (
                         <>
-                          {/* Only show section if there's at least one actionable option */}
+{/* Only show section if there's at least one actionable option */}
                           {((!props.recurringBookings &&
                             (!isBookingInPast || eventType.allowReschedulingPastBookings) &&
                             canReschedule) ||
-                            (!isBookingInPast && canCancel)) && (
+                            (!isBookingInPast && !isCancelDisabled)) && (
                             <>
                               <hr className="border-subtle mb-8" />
                               <div className="text-center last:pb-0">
@@ -897,13 +907,13 @@ export default function Success(props: PageProps) {
                                           data-testid="reschedule-link">
                                           {t("reschedule")}
                                         </Link>
-                                        {!isBookingInPast && canCancel && (
+                                        {!isBookingInPast && !isCancelDisabled && (
                                           <span className="mx-2">{t("or_lowercase")}</span>
                                         )}
                                       </span>
                                     )}
 
-                                  {!isBookingInPast && canCancel && (
+                                  {!isBookingInPast && !isCancelDisabled && (
                                     <button
                                       data-testid="cancel"
                                       className={classNames(
