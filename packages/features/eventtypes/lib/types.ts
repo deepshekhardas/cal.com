@@ -128,9 +128,10 @@ export type FormValues = {
   customInputs: CustomInputParsed[];
   schedule: number | null;
   useEventLevelSelectedCalendars: boolean;
-  disabledCancelling: boolean;
+disabledCancelling: boolean;
   disabledRescheduling: boolean;
   minimumRescheduleNotice: number | null;
+  minimumCancellationNotice: number | null;
   periodType: PeriodType;
   /**
    * Number of days(Applicable only for ROLLING period type)
@@ -388,9 +389,10 @@ export type EventTypeUpdateInput = {
   seatsPerTimeSlot?: number | null;
   onlyShowFirstAvailableSlot?: boolean;
   showOptimizedSlots?: boolean | null;
-  disableCancelling?: boolean | null;
+disableCancelling?: boolean | null;
   disableRescheduling?: boolean | null;
   minimumRescheduleNotice?: number | null;
+  minimumCancellationNotice?: number | null;
   seatsShowAttendees?: boolean | null;
   seatsShowAvailabilityCount?: boolean | null;
   scheduleId?: number | null;

@@ -1,4 +1,5 @@
 import { isWithinMinimumRescheduleNotice } from "@calcom/features/bookings/lib/reschedule/isWithinMinimumRescheduleNotice";
+import { isWithinMinimumCancellationNotice } from "@calcom/features/bookings/lib/reschedule/isWithinMinimumCancellationNotice";
 import { BookingStatus, SchedulingType } from "@calcom/prisma/enums";
 import type { ActionType } from "@calcom/ui/components/table";
 
@@ -270,8 +271,12 @@ export function isActionDisabled(actionId: string, context: BookingActionContext
         isDisabledRescheduling ||
         isWithinMinimumNotice
       );
-    case "cancel":
-      return isDisabledCancelling || isBookingInPast || isCancelled || isRejected;
+case "cancel":
+      const isWithinMinimumCancelNotice = isWithinMinimumCancellationNotice(
+        new Date(booking.startTime),
+        booking.eventType.minimumCancellationNotice ?? null
+      );
+      return isDisabledCancelling || isBookingInPast || isCancelled || isRejected || isWithinMinimumCancelNotice;
     case "view_recordings":
       return !(isBookingInPast && booking.status === BookingStatus.ACCEPTED && context.isCalVideoLocation);
     case "meeting_session_details":
