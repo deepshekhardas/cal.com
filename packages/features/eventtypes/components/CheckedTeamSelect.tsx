@@ -11,7 +11,7 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import { Avatar } from "@calcom/ui/components/avatar";
 import { Button } from "@calcom/ui/components/button";
-import { Select } from "@calcom/ui/components/form";
+import { CreatableSelect, Select } from "@calcom/ui/components/form";
 import { Icon } from "@calcom/ui/components/icon";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 
@@ -31,6 +31,8 @@ export type CheckedSelectOption = {
   disabled?: boolean;
   defaultScheduleId?: number | null;
   groupId: string | null;
+  email?: string;
+  isEmailInvite?: boolean;
 };
 
 export type CheckedTeamSelectCustomClassNames = {
@@ -49,12 +51,25 @@ export type CheckedTeamSelectCustomClassNames = {
   priorityDialog?: PriorityDialogCustomClassNames;
   weightDialog?: WeightDialogCustomClassNames;
 };
+
+const emailRegex = /^(?!\.)(?!.*\.\.)([A-Z0-9_+-\.']*)[A-Z0-9_+'-]@([A-Z0-9][A-Z0-9\-]*\.)+[A-Z]{2,}$/i;
+
+const isValidEmail = (email: string): boolean => emailRegex.test(email);
+
+const parseEmailsFromInput = (input: string): string[] => {
+  return input
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => e.length > 0);
+};
+
 export const CheckedTeamSelect = ({
   options = [],
   value = [],
   isRRWeightsEnabled,
   customClassNames,
   groupId,
+  allowEmailInvites = false,
   ...props
 }: Omit<Props<CheckedSelectOption, true>, "value" | "onChange"> & {
   options?: Options<CheckedSelectOption>;
@@ -63,6 +78,7 @@ export const CheckedTeamSelect = ({
   isRRWeightsEnabled?: boolean;
   customClassNames?: CheckedTeamSelectCustomClassNames;
   groupId: string | null;
+  allowEmailInvites?: boolean;
 }) => {
   const isPlatform = useIsPlatform();
   const [priorityDialogOpen, setPriorityDialogOpen] = useState(false);
@@ -73,7 +89,7 @@ export const CheckedTeamSelect = ({
   const { t } = useLocale();
   const [animationRef] = useAutoAnimate<HTMLUListElement>();
 
-  const valueFromGroup = groupId ? value.filter((host) => host.groupId === groupId) : value;
+const valueFromGroup = groupId ? value.filter((host) => host.groupId === groupId) : value;
 
   const handleSelectChange = (newValue: readonly CheckedSelectOption[]) => {
     const otherGroupsHosts = getHostsFromOtherGroups(value, groupId);
@@ -82,14 +98,54 @@ export const CheckedTeamSelect = ({
     props.onChange(newValueAllGroups);
   };
 
+  const handleCreateOption = (inputValue: string) => {
+    const emails = parseEmailsFromInput(inputValue);
+    const existingValues = new Set(value.map((v) => v.value));
+    const existingEmails = new Set(
+      value.filter((v) => v.isEmailInvite).map((v) => v.email?.toLowerCase())
+    );
+
+    const newOptions: CheckedSelectOption[] = [];
+    for (const email of emails) {
+      if (!isValidEmail(email)) continue;
+      if (existingEmails.has(email.toLowerCase())) continue;
+      if (existingValues.has(email)) continue;
+
+      newOptions.push({
+        value: email,
+        label: email,
+        email,
+        isEmailInvite: true,
+        avatar: "",
+        groupId,
+        priority: 2,
+        weight: 100,
+        isFixed: props.isFixed,
+      });
+    }
+
+    if (newOptions.length > 0) {
+      handleSelectChange([...valueFromGroup, ...newOptions]);
+    }
+  };
+
+  const SelectComponent = allowEmailInvites ? CreatableSelect : Select;
+
+  const displayOptions = allowEmailInvites
+    ? [
+        ...options,
+        ...value.filter((v) => v.isEmailInvite && !options.find((o) => o.value === v.value)),
+      ]
+    : options;
+
   return (
     <>
-      <Select
+      <SelectComponent
         {...props}
         name={props.name}
         placeholder={props.placeholder || t("select")}
         isSearchable={true}
-        options={options}
+        options={displayOptions}
         value={valueFromGroup}
         onChange={handleSelectChange}
         isMulti
@@ -98,6 +154,10 @@ export const CheckedTeamSelect = ({
           ...customClassNames?.hostsSelect?.innerClassNames,
           control: "rounded-md",
         }}
+        {...(allowEmailInvites && {
+          onCreateOption: handleCreateOption,
+          createOptionPosition: "first",
+        })}
       />
       {/* This class name conditional looks a bit odd but it allows a seamless transition when using autoanimate
        - Slides down from the top instead of just teleporting in from nowhere*/}
@@ -126,12 +186,13 @@ export const CheckedTeamSelect = ({
                   )}
                 />
               )}
-              <p
+<p
                 className={classNames(
                   "text-emphasis my-auto ms-3 text-sm",
+                  option.isEmailInvite && "italic text-gray-500",
                   customClassNames?.selectedHostList?.listItem?.name
                 )}>
-                {option.label}
+                {option.isEmailInvite ? `${option.label} (${t("invite")})` : option.label}
               </p>
               <div className="ml-auto flex items-center">
                 {option && !option.isFixed ? (

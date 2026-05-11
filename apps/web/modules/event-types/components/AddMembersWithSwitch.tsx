@@ -63,6 +63,7 @@ const CheckedHostField = ({
   isRRWeightsEnabled,
   groupId,
   customClassNames,
+  allowEmailInvites = false,
   ...rest
 }: {
   labelText?: string;
@@ -75,28 +76,73 @@ const CheckedHostField = ({
   isRRWeightsEnabled?: boolean;
   groupId: string | null;
 } & Omit<Partial<ComponentProps<typeof CheckedTeamSelect>>, "onChange" | "value">) => {
+  const isEmailInviteOption = (option: CheckedSelectOption) => !!option.isEmailInvite;
+
+  const emailInviteOptions = (value || [])
+    .filter(({ isFixed: _isFixed }) => isFixed === _isFixed)
+    .filter((host) => host.email && !host.userId)
+    .map((host) => ({
+      value: host.email || "",
+      label: host.email || "",
+      email: host.email,
+      isEmailInvite: true,
+      avatar: "",
+      groupId: host.groupId,
+      priority: host.priority ?? 2,
+      isFixed,
+      weight: host.weight ?? 100,
+    }));
+
   return (
     <div className="flex flex-col rounded-md">
       <div>
         {labelText ? <Label>{labelText}</Label> : <></>}
         <CheckedTeamSelect
-          isOptionDisabled={(option) => !!value.find((host) => host.userId.toString() === option.value)}
+          isOptionDisabled={(option) =>
+            !option.isEmailInvite && !!value.find((host) => host.userId.toString() === option.value)
+          }
           onChange={(options) => {
             onChange &&
               onChange(
-                options.map((option) => ({
-                  isFixed,
-                  userId: parseInt(option.value, 10),
-                  priority: option.priority ?? 2,
-                  weight: option.weight ?? 100,
-                  scheduleId: option.defaultScheduleId,
-                  groupId: option.groupId,
-                }))
+                options.map((option) => {
+                  if (option.isEmailInvite) {
+                    return {
+                      isFixed,
+                      email: option.email,
+                      isPending: true,
+                      priority: option.priority ?? 2,
+                      weight: option.weight ?? 100,
+                      groupId: option.groupId,
+                    };
+                  }
+                  return {
+                    isFixed,
+                    userId: parseInt(option.value, 10),
+                    priority: option.priority ?? 2,
+                    weight: option.weight ?? 100,
+                    scheduleId: option.defaultScheduleId,
+                    groupId: option.groupId,
+                  };
+                })
               );
           }}
           value={(value || [])
             .filter(({ isFixed: _isFixed }) => isFixed === _isFixed)
             .reduce((acc, host) => {
+              if (host.email && !host.userId) {
+                acc.push({
+                  value: host.email,
+                  label: host.email,
+                  email: host.email,
+                  isEmailInvite: true,
+                  avatar: "",
+                  groupId: host.groupId,
+                  priority: host.priority ?? 2,
+                  isFixed,
+                  weight: host.weight ?? 100,
+                });
+                return acc;
+              }
               const option = options.find((member) => member.value === host.userId.toString());
               if (!option) return acc;
 
@@ -116,6 +162,7 @@ const CheckedHostField = ({
           isRRWeightsEnabled={isRRWeightsEnabled}
           customClassNames={customClassNames}
           groupId={groupId}
+          allowEmailInvites={allowEmailInvites}
           {...rest}
         />
       </div>
@@ -194,6 +241,7 @@ export type AddMembersWithSwitchProps = {
   groupId: string | null;
   "data-testid"?: string;
   customClassNames?: AddMembersWithSwitchCustomClassNames;
+  allowEmailInvites?: boolean;
 };
 
 enum AssignmentState {
@@ -260,6 +308,7 @@ export function AddMembersWithSwitch({
   isSegmentApplicable,
   groupId,
   customClassNames,
+  allowEmailInvites = false,
   ...rest
 }: AddMembersWithSwitchProps) {
   const { t } = useLocale();
@@ -328,7 +377,7 @@ export function AddMembersWithSwitch({
               />
             )}
           </div>
-          <div className="mb-2">
+<div className="mb-2">
             <CheckedHostField
               data-testid={rest["data-testid"]}
               value={value}
@@ -345,6 +394,7 @@ export function AddMembersWithSwitch({
               isRRWeightsEnabled={isRRWeightsEnabled}
               groupId={groupId}
               customClassNames={customClassNames?.teamMemberSelect}
+              allowEmailInvites={allowEmailInvites}
             />
           </div>
         </>

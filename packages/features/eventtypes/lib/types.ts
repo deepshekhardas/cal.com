@@ -50,6 +50,8 @@ export type Host = {
   scheduleId?: number | null;
   groupId: string | null;
   location?: HostLocation | null;
+  email?: string;
+  isPending?: boolean;
 };
 export type TeamMember = {
   value: string;
