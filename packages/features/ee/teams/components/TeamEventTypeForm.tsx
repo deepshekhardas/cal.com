@@ -44,7 +44,7 @@ export const TeamEventTypeForm = ({
 
   const { t } = useLocale();
 
-  const { register, setValue, formState } = form;
+  const { register, setValue, formState: { touchedFields, errors } } = form;
   const { canCreateEventType } = permissions;
 
   return (
@@ -63,7 +63,7 @@ export const TeamEventTypeForm = ({
           {...register("title")}
           onChange={(e) => {
             form.setValue("title", e?.target.value);
-            if (formState.touchedFields["slug"] === undefined) {
+            if (touchedFields["slug"] === undefined) {
               form.setValue("slug", slugify(e?.target.value));
             }
           }}
@@ -123,8 +123,8 @@ export const TeamEventTypeForm = ({
           <label htmlFor="schedulingType" className="text-default block text-sm font-bold">
             {t("assignment")}
           </label>
-          {formState.errors.schedulingType && (
-            <Alert className="mt-1" severity="error" message={formState.errors.schedulingType.message} />
+{errors.schedulingType && (
+            <Alert className="mt-1" severity="error" message={errors.schedulingType.message} />
           )}
           <RadioArea.Group
             onValueChange={(val: SchedulingType) => {

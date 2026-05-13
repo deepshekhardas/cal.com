@@ -15,13 +15,14 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
   fieldName,
   t,
 }: hintsOrErrorsProps) {
-  const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
+const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
   /* If there's no methods it means we're using these components outside a React Hook Form context */
   if (!methods) return null;
   const { formState } = methods;
+  const { errors, isSubmitted, dirtyFields } = formState;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  const fieldErrors: FieldErrors<T> | undefined = formState.errors[fieldName];
+  const fieldErrors: FieldErrors<T> | undefined = errors[fieldName];
 
   if (!hintErrors && fieldErrors && !fieldErrors.message) {
     // no hints passed, field errors exist and they are custom ones
@@ -46,7 +47,7 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
       <div className="text-gray text-default mt-2 flex items-center text-sm">
         <ul className="ml-2">
           {hintErrors.map((key: string) => {
-            const submitted = formState.isSubmitted;
+            const submitted = isSubmitted;
             const error = fieldErrors[key] || fieldErrors.message;
             return (
               <li
@@ -99,7 +100,7 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
       <ul className="ml-2">
         {hintErrors.map((key: string) => {
           // if field was changed, as no error exist, show checked status and color
-          const dirty = formState.dirtyFields[fieldName];
+          const dirty = dirtyFields[fieldName];
           return (
             <li key={key} className={!!dirty ? "text-green-600" : ""}>
               {!!dirty ? (

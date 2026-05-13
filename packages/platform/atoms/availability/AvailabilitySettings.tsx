@@ -320,7 +320,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
     const [openSidebar, setOpenSidebar] = useState(false);
     const { t, i18n } = useLocale();
 
-    const form = useForm<AvailabilityFormValues>({
+const form = useForm<AvailabilityFormValues>({
       defaultValues: {
         name: schedule.name,
         timeZone: schedule.timeZone,
@@ -329,6 +329,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
         schedule: schedule.availability || [],
       },
     });
+    const { isDirty } = form.formState;
 
     const watchedValues = useWatch({
       control: form.control,
@@ -344,7 +345,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
       try {
         return (JSON.stringify(form.watch("schedule")) !== JSON.stringify(initialValuesRef.current.availability) || JSON.stringify(watchedValues) !== JSON.stringify(initialValuesRef.current));
       } catch {
-        return form.formState.isDirty;
+        return isDirty;
       }
     }, [watchedValues, form.formState.isDirty]);
 
