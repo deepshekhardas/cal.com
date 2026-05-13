@@ -54,6 +54,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
   const id = useId();
   const { t } = useLocale();
   const methods = useFormContext();
+  const { errors } = methods.formState ?? {};
   const {
     label = t(props.name),
     labelProps,
@@ -86,12 +87,12 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
       ) : (
         <Input id={id} placeholder={placeholder} className={className} {...passThrough} ref={ref} />
       )}
-      {hint}
-      {methods?.formState?.errors[props.name]?.message && (
+{hint}
+      {errors?.[props.name]?.message && (
         <Alert
           className="mt-1"
           severity="error"
-          message={<>{methods.formState.errors[props.name]?.message}</>}
+          message={<>{errors[props.name]?.message}</>}
         />
       )}
     </div>
@@ -167,6 +168,7 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
   const id = useId();
   const { t } = useLocale();
   const methods = useFormContext();
+  const { errors } = methods.formState ?? {};
   const {
     label = t(props.name as string),
     labelProps,
@@ -182,12 +184,12 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
           {label}
         </Label>
       )}
-      <TextArea ref={ref} placeholder={placeholder} {...passThrough} />
-      {methods?.formState?.errors[props.name]?.message && (
+<TextArea ref={ref} placeholder={placeholder} {...passThrough} />
+      {errors?.[props.name]?.message && (
         <Alert
           className="mt-1"
           severity="error"
-          message={<>{methods.formState.errors[props.name]?.message}</>}
+          message={<>{errors[props.name]?.message}</>}
         />
       )}
     </div>

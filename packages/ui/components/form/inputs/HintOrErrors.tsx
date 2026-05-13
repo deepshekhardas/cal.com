@@ -15,13 +15,14 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
   fieldName,
   t,
 }: hintsOrErrorsProps) {
-  const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
+const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
   /* If there's no methods it means we're using these components outside a React Hook Form context */
   if (!methods) return null;
   const { formState } = methods;
+  const { errors } = formState;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  const fieldErrors: FieldErrors<T> | undefined = formState.errors[fieldName];
+  const fieldErrors: FieldErrors<T> | undefined = errors[fieldName];
 
   if (!hintErrors && fieldErrors && !fieldErrors.message) {
     // no hints passed, field errors exist and they are custom ones
