@@ -19,7 +19,7 @@ const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
   /* If there's no methods it means we're using these components outside a React Hook Form context */
   if (!methods) return null;
   const { formState } = methods;
-  const { errors } = formState;
+  const { errors, isSubmitted, dirtyFields } = formState;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const fieldErrors: FieldErrors<T> | undefined = errors[fieldName];
@@ -47,7 +47,7 @@ const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
       <div className="text-gray text-default mt-2 flex items-center text-sm">
         <ul className="ml-2">
           {hintErrors.map((key: string) => {
-            const submitted = formState.isSubmitted;
+            const submitted = isSubmitted;
             const error = fieldErrors[key] || fieldErrors.message;
             return (
               <li
@@ -100,7 +100,7 @@ const methods = useFormContext() as ReturnType<typeof useFormContext> | null;
       <ul className="ml-2">
         {hintErrors.map((key: string) => {
           // if field was changed, as no error exist, show checked status and color
-          const dirty = formState.dirtyFields[fieldName];
+          const dirty = dirtyFields[fieldName];
           return (
             <li key={key} className={!!dirty ? "text-green-600" : ""}>
               {!!dirty ? (

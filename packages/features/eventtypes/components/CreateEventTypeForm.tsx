@@ -39,7 +39,7 @@ export default function CreateEventTypeForm({
   const { t } = useLocale();
   const [firstRender, setFirstRender] = useState(true);
 
-  const { register } = form;
+  const { register, formState: { touchedFields } } = form;
   return (
     <Form
       form={form}
@@ -54,7 +54,7 @@ export default function CreateEventTypeForm({
           {...register("title")}
           onChange={(e) => {
             form.setValue("title", e?.target.value);
-            if (form.formState.touchedFields["slug"] === undefined) {
+            if (touchedFields["slug"] === undefined) {
               form.setValue("slug", slugify(e?.target.value));
             }
           }}
