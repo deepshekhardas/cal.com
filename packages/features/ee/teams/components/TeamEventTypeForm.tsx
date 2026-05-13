@@ -44,7 +44,7 @@ export const TeamEventTypeForm = ({
 
   const { t } = useLocale();
 
-  const { register, setValue, formState } = form;
+  const { register, setValue, formState: { touchedFields } } = form;
   const { canCreateEventType } = permissions;
 
   return (
@@ -63,7 +63,7 @@ export const TeamEventTypeForm = ({
           {...register("title")}
           onChange={(e) => {
             form.setValue("title", e?.target.value);
-            if (formState.touchedFields["slug"] === undefined) {
+            if (touchedFields["slug"] === undefined) {
               form.setValue("slug", slugify(e?.target.value));
             }
           }}

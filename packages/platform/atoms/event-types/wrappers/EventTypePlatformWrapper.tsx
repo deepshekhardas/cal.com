@@ -176,8 +176,9 @@ const EventType = forwardRef<
         callbacksRef.current?.onSuccess?.();
       }
     },
-    onFormStateChange: onFormStateChange,
+onFormStateChange: onFormStateChange,
   });
+  const { errors, isSubmitting } = form.formState;
 
   // Create a ref for the save button to trigger its click
   const saveButtonRef = useRef<HTMLButtonElement>(null);
@@ -210,7 +211,7 @@ const EventType = forwardRef<
     const isValid = await form.trigger();
     return {
       isValid,
-      errors: form.formState.errors,
+      errors,
     };
   }, [form]);
 
@@ -363,7 +364,7 @@ const EventType = forwardRef<
           {slugExistsChildrenDialogOpen.length ? (
             <ManagedEventTypeDialog
               slugExistsChildrenDialogOpen={slugExistsChildrenDialogOpen}
-              isPending={form.formState.isSubmitting}
+              isPending={isSubmitting}
               onOpenChange={() => {
                 setSlugExistsChildrenDialogOpen([]);
               }}

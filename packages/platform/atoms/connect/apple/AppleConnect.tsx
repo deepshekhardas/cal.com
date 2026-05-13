@@ -46,7 +46,8 @@ export const AppleConnect: FC<Partial<Omit<OAuthConnectProps, "redir">>> = ({
       username: "",
       password: "",
     },
-  });
+});
+  const { isSubmitting } = form.formState;
   const { toast } = useToast();
   const { allowConnect, checked, refetch } = useCheck({
     calendar: "apple",
@@ -148,7 +149,7 @@ export const AppleConnect: FC<Partial<Omit<OAuthConnectProps, "redir">>> = ({
             }}>
             <fieldset
               className="stack-y-4"
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               data-testid="apple-calendar-form">
               <TextField
                 required
@@ -180,7 +181,7 @@ export const AppleConnect: FC<Partial<Omit<OAuthConnectProps, "redir">>> = ({
                 disabled={isSaving}
                 type="submit"
                 className="border-none md:rounded-md"
-                loading={form.formState.isSubmitting}
+                loading={isSubmitting}
                 data-testid="apple-calendar-login-button">
                 Save
               </Button>
